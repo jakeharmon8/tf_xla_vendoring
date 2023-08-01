@@ -215,11 +215,11 @@ cc_library(
         "//tensorflow/lite/tools:logging",
         "//tensorflow/lite/tools/optimize:quantization_utils",
         "//tensorflow/lite/tools/versioning",
-        "//tensorflow/tsl/platform:logging",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/types:span",
         "@com_google_googletest//:gtest",
         "@flatbuffers",
+        "@local_tsl//tsl/platform:logging",
     ],
 )
 
@@ -467,7 +467,7 @@ cc_library(
         # is false, but putting these dependencies in a select() seems to
         # defeat copybara's rewriting rules.
         "@gemmlowp",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
     ],
 )
 
@@ -579,20 +579,6 @@ cc_library(
     deps = [
         "//tensorflow/lite/core/c:common",
         "//tensorflow/lite/kernels/internal:types",
-    ],
-)
-
-cc_library(
-    name = "control_flow_common",
-    srcs = [],
-    hdrs = ["control_flow_common.h"],
-    compatible_with = get_compatible_with_portable(),
-    copts = tflite_copts(),
-    deps = [
-        ":kernel_util",
-        "//tensorflow/lite:kernel_api",
-        "//tensorflow/lite/core:subgraph",
-        "//tensorflow/lite/core/c:common",
     ],
 )
 
@@ -728,8 +714,7 @@ BUILTIN_KERNEL_DEPS = [
     ":lstm_shared",
     ":op_macros",
     ":padding",
-    ":control_flow_common",
-    "//third_party/eigen3",
+    "@eigen_archive//:eigen3",
     "@flatbuffers",
     "//tensorflow/lite:framework_stable",
     "//tensorflow/lite:minimal_logging",
@@ -791,8 +776,8 @@ cc_library(
         "@fft2d",
         "@ruy//ruy/profiler:instrumentation",
         "//tensorflow/lite:array",
-        "//tensorflow/tsl/lib/random:philox_random",
-        "//tensorflow/tsl/lib/random:random_distributions_utils",
+        "@local_tsl//tsl/lib/random:philox_random",
+        "@local_tsl//tsl/lib/random:random_distributions_utils",
         "//tensorflow/lite/core/c:c_api_types",
         # TODO(b/179298174): Move out from the experimental directory.
         "//tensorflow/lite/experimental/resource",
@@ -864,7 +849,7 @@ cc_library(
         "//tensorflow/lite/kernels:cpu_backend_context",
         "//tensorflow/lite/kernels/internal:optimized_base",
         "//tensorflow/lite/kernels/internal:tensor",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
     ],
 )
 
@@ -1437,9 +1422,9 @@ cc_test(
         "//tensorflow/lite/core/api",
         "//tensorflow/lite/kernels/internal:types",
         "//tensorflow/lite/schema:schema_fbs",
-        "//third_party/eigen3",
         "@com_google_absl//absl/memory",
         "@com_google_googletest//:gtest",
+        "@eigen_archive//:eigen3",
         "@flatbuffers",
     ],
 )
@@ -1458,9 +1443,9 @@ cc_test(
         "//tensorflow/lite/kernels/internal:reference",
         "//tensorflow/lite/kernels/internal:types",
         "//tensorflow/lite/schema:schema_fbs",
-        "//third_party/eigen3",
         "@com_google_absl//absl/memory",
         "@com_google_googletest//:gtest",
+        "@eigen_archive//:eigen3",
         "@flatbuffers",
     ],
 )
@@ -2627,9 +2612,6 @@ cc_test(
         ":test_main",
         "//tensorflow/lite:framework_stable",
         "//tensorflow/lite/core:framework_stable",
-        "//tensorflow/lite/delegates/xnnpack:xnnpack_delegate",
-        "//tensorflow/lite/kernels/internal:tensor",
-        "//tensorflow/lite/profiling:memory_info",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -2661,8 +2643,8 @@ cc_test(
         ":test_util",
         "//tensorflow/lite:string",
         "//tensorflow/lite/schema:schema_fbs",
-        "//third_party/eigen3",
         "@com_google_googletest//:gtest",
+        "@eigen_archive//:eigen3",
     ],
 )
 

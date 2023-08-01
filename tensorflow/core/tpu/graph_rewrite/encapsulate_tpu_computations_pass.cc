@@ -15,15 +15,12 @@ limitations under the License.
 
 #include "tensorflow/core/tpu/graph_rewrite/encapsulate_tpu_computations_pass.h"
 
-#include <optional>
 #include <queue>
-#include <string>
-#include <utility>
-#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "tensorflow/compiler/jit/encapsulate_subgraphs_pass.h"
 #include "tensorflow/compiler/jit/encapsulate_util.h"
@@ -31,7 +28,7 @@ limitations under the License.
 #include "tensorflow/compiler/jit/xla_cluster_util.h"
 #include "tensorflow/compiler/tf2xla/side_effect_util.h"
 #include "tensorflow/compiler/tf2xla/tf2xla_util.h"
-#include "tensorflow/compiler/xla/status_macros.h"
+#include "xla/status_macros.h"
 #include "tensorflow/core/common_runtime/function.h"
 #include "tensorflow/core/framework/function.h"
 #include "tensorflow/core/framework/graph_to_functiondef.h"
@@ -1607,7 +1604,7 @@ Status RenameClustersWithDuplicatedNames(Graph* g) {
       // Start with outputs of TPUReplicateMetadata and follow output edges.
       std::queue<Node*> queue;
       queue.push(iter.second.at(i));
-      absl::flat_hash_set<Node*> visited;
+      std::unordered_set<Node*> visited;
       while (!queue.empty()) {
         Node* n = queue.front();
         queue.pop();
@@ -1843,7 +1840,7 @@ Status LiftOutsideCompilationOnlyArgs(Graph* g, FunctionLibraryRuntime* flr,
 Status LiftOutsideCompilationOnlyArgsAndReplaceFunctionDef(
     const FunctionBody& fbody, FunctionLibraryRuntime* flr,
     FunctionLibraryDefinition* fld, int* lifted_arg_count,
-    std::optional<string> new_func_name, bool* rewritten) {
+    absl::optional<string> new_func_name, bool* rewritten) {
   *rewritten = false;
   TF_RETURN_IF_ERROR(LiftOutsideCompilationOnlyArgs(
       fbody.graph, flr, fld, lifted_arg_count, rewritten));
@@ -2313,7 +2310,7 @@ Status LiftOutsideCompilationOnlyArgs(Graph* g, FunctionLibraryRuntime* flr,
       bool func_rewritten = false;
       TF_RETURN_IF_ERROR(LiftOutsideCompilationOnlyArgsAndReplaceFunctionDef(
           *body_fbody, flr, fld, lifted_arg_count,
-          /*new_func_name=*/std::nullopt, &func_rewritten));
+          /*new_func_name=*/absl::nullopt, &func_rewritten));
       *rewritten = *rewritten || func_rewritten;
 
       while_nodes.push_back(n);
@@ -2324,7 +2321,7 @@ Status LiftOutsideCompilationOnlyArgs(Graph* g, FunctionLibraryRuntime* flr,
       bool func_rewritten = false;
       TF_RETURN_IF_ERROR(LiftOutsideCompilationOnlyArgsAndReplaceFunctionDef(
           *then_branch_fbody, flr, fld, lifted_arg_count,
-          /*new_func_name=*/std::nullopt, &func_rewritten));
+          /*new_func_name=*/absl::nullopt, &func_rewritten));
       *rewritten |= func_rewritten;
 
       TF_ASSIGN_OR_RETURN(
@@ -2333,7 +2330,7 @@ Status LiftOutsideCompilationOnlyArgs(Graph* g, FunctionLibraryRuntime* flr,
       func_rewritten = false;
       TF_RETURN_IF_ERROR(LiftOutsideCompilationOnlyArgsAndReplaceFunctionDef(
           *else_branch_fbody, flr, fld, lifted_arg_count,
-          /*new_func_name=*/std::nullopt, &func_rewritten));
+          /*new_func_name=*/absl::nullopt, &func_rewritten));
       *rewritten |= func_rewritten;
 
       if_nodes.push_back(n);
@@ -2473,7 +2470,7 @@ Status LiftOutsideCompilationOnlyArgs(Graph* g, FunctionLibraryRuntime* flr,
   TF_RETURN_IF_ERROR(
       PerformStaticShapeInferenceBeforeEncapsulation(graph->get()));
 
-  auto output = std::make_unique<Graph>((*graph)->op_registry());
+  auto output = absl::make_unique<Graph>((*graph)->op_registry());
   TF_RETURN_WITH_CONTEXT_IF_ERROR(
       EncapsulateSubgraphsInFunctions(
           kTPUReplicateAttr, **graph, RewriteSubgraph,
@@ -2577,8 +2574,9 @@ Status LiftOutsideCompilationOnlyArgs(Graph* g, FunctionLibraryRuntime* flr,
           GetNodeAttr(in_edges[pos]->src()->attrs(), "N", &input_num_replicas));
 
       bool is_mirrored_variable;
-      CHECK_OK(GetNodeAttr(in_edges[pos]->src()->attrs(),
-                           "is_mirrored_variable", &is_mirrored_variable));
+      CHECK(GetNodeAttr(in_edges[pos]->src()->attrs(), "is_mirrored_variable",
+                        &is_mirrored_variable)
+                .ok());
       if (is_mirrored_variable) {
         mirrored_variable_indices.push_back(pos);
       }

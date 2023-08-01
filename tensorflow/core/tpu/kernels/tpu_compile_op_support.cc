@@ -21,12 +21,12 @@ limitations under the License.
 #include <variant>
 #include <vector>
 
-#include "tensorflow/compiler/xla/debug_options_flags.h"
-#include "tensorflow/compiler/xla/service/computation_layout.h"
-#include "tensorflow/compiler/xla/service/computation_placer.h"
-#include "tensorflow/compiler/xla/service/dump.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/proto_helper.h"
-#include "tensorflow/compiler/xla/xla_data.pb.h"
+#include "xla/debug_options_flags.h"
+#include "xla/service/computation_layout.h"
+#include "xla/service/computation_placer.h"
+#include "xla/service/dump.h"
+#include "xla/stream_executor/tpu/proto_helper.h"
+#include "xla/xla_data.pb.h"
 #include "tensorflow/core/platform/errors.h"
 #include "tensorflow/core/tpu/kernels/tpu_compilation_cache_key.h"
 #include "tensorflow/core/tpu/kernels/tpu_executable_info.pb.h"
@@ -317,7 +317,7 @@ Status ComputeOutputShapesForEachCore(
 Status CreateHloModules(
     const TPUCompileMetadataProto& metadata,
     const tensorflow::XlaCompiler::CompilationResult& compilation_result,
-    const std::optional<xla::DeviceAssignment>& device_assignment,
+    const absl::optional<xla::DeviceAssignment>& device_assignment,
     std::vector<std::unique_ptr<xla::HloModule>>* hlo_modules) {
   TF_RET_CHECK(
       compilation_result.computation->proto().has_host_program_shape());
@@ -345,7 +345,7 @@ Status CreateHloModules(
 }
 
 StatusOr<TpuCompilationRequestProto> CreateTpuCompilationRequest(
-    const std::variant<MlirToHloArgs, FunctionToHloArgs>& computation,
+    const absl::variant<MlirToHloArgs, FunctionToHloArgs>& computation,
     const TPUCompileMetadataProto& metadata,
     const std::vector<TensorShape>& arg_shapes) {
   VLOG(1) << "CreateTpuCompilationRequest.";

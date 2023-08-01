@@ -19,7 +19,11 @@ include(gemmlowp)
 if(gemmlowp_POPULATED)
   set(GEMMLOWP_FOUND TRUE)
   get_target_property(GEMMLOWP_INCLUDE_DIRS gemmlowp INTERFACE_DIRECTORIES)
-  add_library(gemmlowp::gemmlowp ALIAS gemmlowp)
-  set(GEMMLOWP_LIBRARIES gemmlowp)
+  set(GEMMLOWP_LIBRARIES
+    gemmlowp
+    gemmlowp_fixedpoint
+    gemmlowp_profiler
+    gemmlowp_eight_bit_int_gemm
+  )
 endif()
 

@@ -27,7 +27,7 @@ limitations under the License.
 #include "tensorflow/core/framework/ops_util.h"
 #include "tensorflow/core/util/mkl_util.h"
 #include "tensorflow/core/util/padding.h"
-#if defined(DNNL_AARCH64_USE_ACL) && defined(ENABLE_ONEDNN_OPENMP)
+#ifdef DNNL_AARCH64_USE_ACL
 #include "tensorflow/core/platform/mutex.h"
 #endif
 
@@ -176,7 +176,7 @@ class MklPoolingFwdPrimitive : public MklPrimitive {
 
   struct PoolingFwdContext context_;
 
-#if defined(DNNL_AARCH64_USE_ACL) && defined(ENABLE_ONEDNN_OPENMP)
+#ifdef DNNL_AARCH64_USE_ACL
   mutex primitive_execution_mu_;
 #endif
 };
@@ -331,7 +331,7 @@ class MklPoolingBwdPrimitive : public MklPrimitive {
   };
 
   struct PoolingBwdContext context_;
-#if defined(DNNL_AARCH64_USE_ACL) && defined(ENABLE_ONEDNN_OPENMP)
+#ifdef DNNL_AARCH64_USE_ACL
   mutex primitive_execution_mu_;
 #endif
 };

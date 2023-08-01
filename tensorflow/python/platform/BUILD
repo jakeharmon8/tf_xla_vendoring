@@ -187,10 +187,11 @@ tf_python_pybind_extension(
     srcs = ["stacktrace_handler_wrapper.cc"],
     hdrs = [
         "//tensorflow/core/platform:stacktrace_handler_hdrs",
-        "//tensorflow/tsl/platform:stacktrace_handler_hdrs",
+        "@local_tsl//tsl/platform:stacktrace_handler_hdrs",
     ],
     deps = [
         "//third_party/python_runtime:headers",
+        "@local_tsl//tsl/platform:stacktrace_handler_hdrs_lib",
         "@pybind11",
     ],
 )

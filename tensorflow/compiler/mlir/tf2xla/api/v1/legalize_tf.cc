@@ -41,16 +41,16 @@ limitations under the License.
 #include "tensorflow/compiler/tf2xla/layout_util.h"
 #include "tensorflow/compiler/tf2xla/tf2xla_util.h"
 #include "tensorflow/compiler/tf2xla/xla_helpers.h"
-#include "tensorflow/compiler/xla/mlir_hlo/mhlo/IR/register.h"
+#include "xla/mlir_hlo/mhlo/IR/register.h"
 #include "tensorflow/core/lib/monitoring/counter.h"
 #include "tensorflow/core/lib/monitoring/sampler.h"
 #include "tensorflow/core/platform/statusor.h"
 #include "tensorflow/core/tpu/kernels/tpu_compile_op_support.h"
 #include "tensorflow/core/tpu/kernels/tpu_util.h"
 #include "tensorflow/core/tpu/tpu_compile.h"
-#include "tensorflow/tsl/platform/error_logging.h"
-#include "tensorflow/tsl/platform/status.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tsl/platform/error_logging.h"
+#include "tsl/platform/status.h"
+#include "tsl/platform/statusor.h"
 
 namespace tensorflow {
 namespace tf2xla {
@@ -128,6 +128,7 @@ bool ShouldFallbackToGraphCompiler(
 }
 
 Status CompileFromMlirToXlaHlo(
+    bool enable_op_fallback,
     const std::variant<MlirToHloArgs, FunctionToHloArgs>& computation,
     const tpu::TPUCompileMetadataProto& metadata, llvm::StringRef device_type,
     const XlaShapeLayoutHelpers::ShapeDeterminationFns& shape_determination_fns,
@@ -136,11 +137,18 @@ Status CompileFromMlirToXlaHlo(
     const std::vector<TensorShape>& arg_shapes,
     std::vector<ShardingAndIndex>* arg_core_mapping,
     std::vector<std::vector<xla::Shape>>* per_core_arg_shapes) {
+  if (enable_op_fallback) {
     LOG_FIRST_N(INFO, 1)
         << "Compiling MLIR computation to XLA HLO using MLIR tf2xla bridge in "
            "the op by op fallback mode. This is Phase 2 of the TF2XLA Bridge. "
            "Old (non-MLIR) bridge may be used in case of unsupported feature "
            "or compilation failure from the MLIR bridge (full fallback mode).";
+  } else {
+    LOG_FIRST_N(INFO, 1)
+        << "Compiling MLIR computation to XLA HLO using MLIR tf2xla bridge "
+           "phase 2. Fallback to the old (non-MLIR) bridge is disabled. "
+           "Op-by-op fallback is also disabled.";
+  }
 
   mlir::DialectRegistry registry;
   mlir::RegisterAllTensorFlowDialects(registry);
@@ -155,7 +163,7 @@ Status CompileFromMlirToXlaHlo(
 
   TF_RETURN_IF_ERROR(CompileSerializedMlirToXlaHlo(
       SerializeMlirModule(mlir_module.get()), arg_shapes, device_type,
-      use_tuple_args, /*enable_op_fallback=*/true, shape_determination_fns,
+      use_tuple_args, enable_op_fallback, shape_determination_fns,
       compilation_result, custom_legalization_passes, metadata.module_name()));
 
   // Compute how arguments are shared across different cores.
@@ -189,26 +197,47 @@ tsl::StatusOr<tensorflow::XlaCompilationResult> LegalizeMlirToHlo(
   // We could only end up here if the MLIR bridge was explicitly enabled or
   // if it was in the default/unspecified state and graph analysis in the first
   // phase has not identified unsupported features.
+  // Enabling op fallback also enables whole graph fallback if op by op
+  // fallback failed.
+  bool enable_op_fallback = true;
+
   Status mlir_bridge_status = tsl::OkStatus();
   {
     CompilationTimer timer;
-    const std::string kMlirBridgeFallback = "mlir_bridge_op_fallback_enabled";
+    std::string enabled_string = enable_op_fallback ? "enabled" : "disabled";
+    const std::string kMlirBridgeFallback =
+        absl::StrCat("mlir_bridge_op_fallback_", enabled_string);
 
     mlir_bridge_status = CompileFromMlirToXlaHlo(
-        computation, metadata, device_type, shape_determination_fns,
-        use_tuple_args, compilation_result.get(), custom_legalization_passes,
-        arg_shapes, arg_core_mapping, per_core_arg_shapes);
+        enable_op_fallback, computation, metadata, device_type,
+        shape_determination_fns, use_tuple_args, compilation_result.get(),
+        custom_legalization_passes, arg_shapes, arg_core_mapping,
+        per_core_arg_shapes);
 
     phase2_bridge_compilation_time->GetCell(kMlirBridgeFallback)
         ->Add(timer.ElapsedCyclesInMilliseconds());
   }
 
   if (mlir_bridge_status.ok()) {
-    VLOG(1) << "Successfully compiled MLIR computation to XLA HLO using MLIR "
-               "tf2xla bridge";
-    mlir_second_phase_count->GetCell(kMlirWithFallbackModeSuccess)
-        ->IncrementBy(1);
+    if (enable_op_fallback) {
+      VLOG(1) << "Successfully compiled MLIR computation to XLA HLO using MLIR "
+                 "tf2xla bridge";
+      mlir_second_phase_count->GetCell(kMlirWithFallbackModeSuccess)
+          ->IncrementBy(1);
+    } else {
+      mlir_second_phase_count->GetCell(kMlirModeSuccess)->IncrementBy(1);
+    }
     return *compilation_result;
+  } else if (!enable_op_fallback) {
+    // Don't fallback to the old bridge if op-by-op fallback isn't enabled.
+    mlir_second_phase_count->GetCell(kMlirModeFailure)->IncrementBy(1);
+    if (!mlir_bridge_status.ok()) {
+      tsl::error_logging::Log(kBridgeComponent,
+                              "TFXLA_API_V1_BRIDGE_NO_FALLBACK",
+                              mlir_bridge_status.ToString())
+          .IgnoreError();
+    }
+    return mlir_bridge_status;
   } else {
     tsl::error_logging::Log(kBridgeComponent,
                             "TFXLA_API_V1_BRIDGE_WITH_FALLBACK_FAIL",

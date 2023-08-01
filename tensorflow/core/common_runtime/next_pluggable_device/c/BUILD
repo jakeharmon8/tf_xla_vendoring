@@ -15,9 +15,9 @@ cc_library(
         "//tensorflow/c:c_api_macros_hdrs",
         "//tensorflow/c:tf_status_headers",
         "//tensorflow/c:tf_tensor_hdrs",
-        "//tensorflow/compiler/xla/c:c_api_decl",
-        "//tensorflow/compiler/xla/pjrt/c:pjrt_c_api_hdrs",
-        "//tensorflow/compiler/xla/stream_executor/tpu:c_api_decl",
+        "@local_xla//xla/c:c_api_decl",
+        "@local_xla//xla/pjrt/c:pjrt_c_api_hdrs",
+        "@local_xla//xla/stream_executor/tpu:c_api_decl",
     ],
 )
 
@@ -29,7 +29,7 @@ cc_library(
     deps = [
         ":plugin_c_api_hdrs",
         "//tensorflow/core/platform:logging",
-        "//tensorflow/tsl/platform:env",
+        "@local_tsl//tsl/platform:env",
         "@tf_runtime//:hostcontext_alwayslink",
     ],
 )
@@ -54,65 +54,6 @@ tf_cc_shared_object(
     visibility = ["//tensorflow/c:__subpackages__"],
     deps = [
         ":plugin_c_api_hdrs",
-        "//tensorflow/compiler/xla/pjrt/c:pjrt_c_api_hdrs",
-    ],
-)
-
-cc_library(
-    name = "outside_compilation_params",
-    hdrs = ["outside_compilation_params.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":tf_rendezvous_c_api",
-        "//tensorflow/compiler/xla/stream_executor/tpu:c_api_decl",
-    ],
-)
-
-cc_library(
-    name = "tf_rendezvous_c_api",
-    hdrs = ["tf_rendezvous_c_api.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//tensorflow/c:tf_status_headers"],
-)
-
-cc_library(
-    name = "tf_rendezvous_c_api_defn",
-    hdrs = ["tf_rendezvous_c_api_defn.h"],
-    deps = [
-        ":tf_rendezvous_c_api",
-        "//tensorflow/core:framework",
-    ],
-)
-
-cc_library(
-    name = "tf_rendezvous_c_api_conversions",
-    srcs = ["tf_rendezvous_c_api_conversions.cc"],
-    hdrs = ["tf_rendezvous_c_api_conversions.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":outside_compilation_params",
-        ":tf_rendezvous_c_api",
-        ":tf_rendezvous_c_api_defn",
-        "//tensorflow/c:tf_status_headers",
-        "//tensorflow/c:tf_status_helper",
-        "//tensorflow/compiler/xla/stream_executor/tpu:proto_helper",
-        "//tensorflow/core:framework_internal",
-        "//tensorflow/tsl/framework:allocator",
-    ],
-)
-
-tf_cc_test(
-    name = "tf_rendezvous_c_api_conversions_test",
-    srcs = ["tf_rendezvous_c_api_conversions_test.cc"],
-    tags = [
-        "no_mac",
-        "no_windows",
-    ],
-    deps = [
-        ":tf_rendezvous_c_api",
-        ":tf_rendezvous_c_api_conversions",
-        "//tensorflow/c:tf_status",
-        "//tensorflow/tsl/framework:allocator",
-        "@com_google_googletest//:gtest_main",
+        "@local_xla//xla/pjrt/c:pjrt_c_api_hdrs",
     ],
 )

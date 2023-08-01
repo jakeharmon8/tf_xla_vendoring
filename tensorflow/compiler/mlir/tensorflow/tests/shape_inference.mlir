@@ -1282,9 +1282,9 @@ module attributes {tf.versions = {bad_consumers = [], min_consumer = 0 : i32, pr
     func.return %1#1 : tensor<*x!quant.uniform<u8:f32, 0.007:128>>
   }
 
-  // CHECK-LABEL: func @xla_call_module
+  // CHECK-LABEL: func @local_xla_call_module
   // CHECK-SAME: (%arg0: tensor<f32>) -> tensor<f32>
-  func.func @xla_call_module(%arg0: tensor<f32>) -> tensor<*xf32> {
+  func.func @local_xla_call_module(%arg0: tensor<f32>) -> tensor<*xf32> {
     // Equivalent to the following:
     //
     // module @jit_sin {
@@ -1297,22 +1297,22 @@ module attributes {tf.versions = {bad_consumers = [], min_consumer = 0 : i32, pr
     func.return %0 : tensor<*xf32>
   }
 
-  func.func @xla_call_module_parsing_error(%arg0: tensor<f32>) -> tensor<*xf32> {
+  func.func @local_xla_call_module_parsing_error(%arg0: tensor<f32>) -> tensor<*xf32> {
     %0 = "tf.Identity"(%arg0) : (tensor<f32>) -> tensor<*xf32>
     %1 = "tf.XlaCallModule"(%arg0, %0) {Sout = [#tf_type.shape<*>], device = "", dim_args_spec = [], module = "invalid-stablehlo-module", platforms = [], version = 4 : i64} : (tensor<f32>, tensor<*xf32>) -> tensor<*xf32>
     func.return %1 : tensor<*xf32>
   }
 
-  // CHECK-LABEL: func @xla_host_compute_mlir_empty_module
-  func.func @xla_host_compute_mlir_empty_module(%arg0: tensor<2xf32>) -> tensor<*xf32> {
+  // CHECK-LABEL: func @local_xla_host_compute_mlir_empty_module
+  func.func @local_xla_host_compute_mlir_empty_module(%arg0: tensor<2xf32>) -> tensor<*xf32> {
     // CHECK: "tf._XlaHostComputeMlir"
     // CHECK-SAME: -> tensor<*xf32>
     %0 = "tf._XlaHostComputeMlir"(%arg0) {recv_key = "host_compute_channel_recv", send_key = "host_compute_channel_send", tpu_core = 0, host_mlir_module = ""} : (tensor<2xf32>) -> tensor<*xf32>
     func.return %0 : tensor<*xf32>
   }
 
-  // CHECK-LABEL: func @xla_host_compute_mlir_shape_inferred
-  func.func @xla_host_compute_mlir_shape_inferred(%arg0: tensor<2xf32>) -> tensor<*xf32> {
+  // CHECK-LABEL: func @local_xla_host_compute_mlir_shape_inferred
+  func.func @local_xla_host_compute_mlir_shape_inferred(%arg0: tensor<2xf32>) -> tensor<*xf32> {
     // CHECK: "tf._XlaHostComputeMlir"
     // CHECK-SAME: -> tensor<2xf32>
     // CHECK: return
@@ -1358,8 +1358,8 @@ module attributes {tf.versions = {bad_consumers = [], min_consumer = 0 : i32, pr
     func.return
   }
 
-  // CHECK-LABEL: func @xla_reduce_window
-  func.func @xla_reduce_window(%arg0: tensor<7xf32>, %arg1: tensor<f32>) -> tensor<?xf32> {
+  // CHECK-LABEL: func @local_xla_reduce_window
+  func.func @local_xla_reduce_window(%arg0: tensor<7xf32>, %arg1: tensor<f32>) -> tensor<?xf32> {
     %cst = "tf.Const"() {value = dense<0> : tensor<1x2xi32>} : () -> tensor<1x2xi32>
     %cst_0 = "tf.Const"() {value = dense<1> : tensor<1xi32>} : () -> tensor<1xi32>
     %cst_1 = "tf.Const"() {value = dense<2> : tensor<1xi32>} : () -> tensor<1xi32>
@@ -1370,9 +1370,9 @@ module attributes {tf.versions = {bad_consumers = [], min_consumer = 0 : i32, pr
     func.return %0 : tensor<?xf32>
   }
 
-  // CHECK-LABEL: func @xla_gather
+  // CHECK-LABEL: func @local_xla_gather
   // CHECK-SAME: (%arg0: tensor<1x1x9xi32>, %arg1: tensor<1xi32>) -> tensor<1x1x8xi32>
-  func.func @xla_gather(%arg0: tensor<1x1x9xi32>, %arg1: tensor<1xi32>) -> tensor<*xi32> {
+  func.func @local_xla_gather(%arg0: tensor<1x1x9xi32>, %arg1: tensor<1xi32>) -> tensor<*xi32> {
     %cst = "tf.Const"() {value = dense<[1, 1, 8]> : tensor<3xi32>} : () -> tensor<3xi32>
     %0 = "tf.XlaGather"(%arg0, %arg1, %cst) {dimension_numbers = "\0A\03\00\01\02\1A\01\02", indices_are_sorted = true} : (tensor<1x1x9xi32>, tensor<1xi32>, tensor<3xi32>) -> tensor<*xi32>
     func.return %0 : tensor<*xi32>

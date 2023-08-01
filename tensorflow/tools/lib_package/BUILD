@@ -147,6 +147,8 @@ genrule(
         "@snappy//:COPYING",
         "@stablehlo//:LICENSE",
         "@tf_runtime//:LICENSE",
+        "@local_tsl//:LICENSE",
+        "@local_xla//:LICENSE",
     ] + select({
         "//tensorflow:android": [],
         "//tensorflow:ios": [],
@@ -157,7 +159,7 @@ genrule(
             "@com_github_googlecloudplatform_google_cloud_cpp//:LICENSE",
         ],
     }) + select({
-        "//tensorflow/tsl:with_numa_support": [
+        "@local_tsl//tsl:with_numa_support": [
             "@hwloc//:COPYING",
         ],
         "//conditions:default": [],
@@ -186,6 +188,8 @@ genrule(
         "@snappy//:COPYING",
         "@stablehlo//:LICENSE",
         "@tf_runtime//:LICENSE",
+        "@local_tsl//:LICENSE",
+        "@local_xla//:LICENSE",
     ] + select({
         "//tensorflow:android": [],
         "//tensorflow:ios": [],
@@ -196,7 +200,7 @@ genrule(
             "@com_github_googlecloudplatform_google_cloud_cpp//:LICENSE",
         ],
     }) + select({
-        "//tensorflow/tsl:with_numa_support": [
+        "@local_tsl//tsl:with_numa_support": [
             "@hwloc//:COPYING",
         ],
         "//conditions:default": [],

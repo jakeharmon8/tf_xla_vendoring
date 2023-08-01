@@ -24,7 +24,7 @@ limitations under the License.
 #include "tensorflow/core/kernels/batching_util/warmup.h"
 #include "tensorflow/core/lib/core/status_test_util.h"
 #include "tensorflow/core/platform/test.h"
-#include "tensorflow/tsl/platform/blocking_counter.h"
+#include "tsl/platform/blocking_counter.h"
 
 namespace tensorflow {
 

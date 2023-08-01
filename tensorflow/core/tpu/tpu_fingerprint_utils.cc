@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 #include "tensorflow/core/tpu/tpu_fingerprint_utils.h"
 
-#include "tensorflow/compiler/xla/status_macros.h"
+#include "xla/status_macros.h"
 #include "tensorflow/core/lib/strings/proto_serialization.h"
 #include "tensorflow/core/tpu/tpu_compile_interface.h"
 

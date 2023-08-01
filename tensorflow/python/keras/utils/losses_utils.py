@@ -24,8 +24,10 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import cond
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops.ragged import ragged_tensor
+from tensorflow.python.util.tf_export import keras_export
 
 
+@keras_export('keras.losses.Reduction', v1=[])
 class ReductionV2(object):
   """Types of loss reduction.
 
@@ -274,6 +276,7 @@ def reduce_weighted_loss(weighted_losses,
   return loss
 
 
+@keras_export('keras.__internal__.losses.compute_weighted_loss', v1=[])
 def compute_weighted_loss(losses,
                           sample_weight=None,
                           reduction=ReductionV2.SUM_OVER_BATCH_SIZE,

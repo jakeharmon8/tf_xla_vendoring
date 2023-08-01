@@ -36,6 +36,7 @@ from tensorflow.python.ops.numpy_ops import np_arrays
 from tensorflow.python.platform import tf_logging as logging
 from tensorflow.python.trackable import base as trackable
 from tensorflow.python.util import nest
+from tensorflow.python.util.tf_export import keras_export
 
 
 SINGLE_LAYER_OUTPUT_ERROR_MSG = ('All layers in a Sequential model should have '
@@ -43,6 +44,7 @@ SINGLE_LAYER_OUTPUT_ERROR_MSG = ('All layers in a Sequential model should have '
                                  'layers, use the functional API.')
 
 
+@keras_export('keras.Sequential', 'keras.models.Sequential')
 class Sequential(functional.Functional):
   """`Sequential` groups a linear stack of layers into a `tf.keras.Model`.
 

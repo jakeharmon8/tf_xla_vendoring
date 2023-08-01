@@ -39,8 +39,8 @@ cc_library(
         "//third_party/py/courier:__subpackages__",
     ],
     deps = [
-        "//tensorflow/tsl/python/lib/core:ml_dtypes_lib",
         "//third_party/python_runtime:headers",  # build_cleaner: keep; DNR: b/35864863
+        "@local_tsl//tsl/python/lib/core:ml_dtypes_lib",
     ],
 )
 
@@ -58,8 +58,8 @@ cc_library(
         "//tensorflow/c:c_api_no_xla",
         "//tensorflow/core:lib",
         "//tensorflow/core:protos_all_cc",
-        "//tensorflow/tsl/python/lib/core:ml_dtypes_lib",
-        "//tensorflow/tsl/python/lib/core:numpy",
+        "@local_tsl//tsl/python/lib/core:ml_dtypes_lib",
+        "@local_tsl//tsl/python/lib/core:numpy",
     ],
 )
 
@@ -188,9 +188,9 @@ cc_library(
         "//tensorflow/core/common_runtime/eager:context",
         "//tensorflow/core/common_runtime/eager:tensor_handle",
         "//tensorflow/python/eager:pywrap_tfe_lib",
-        "//tensorflow/tsl/python/lib/core:numpy",
         "//third_party/py/numpy:headers",
         "//third_party/python_runtime:headers",
+        "@local_tsl//tsl/python/lib/core:numpy",
     ],
     alwayslink = 1,
 )
@@ -228,7 +228,7 @@ cc_library(
         "//tensorflow/c:headers",
         "//tensorflow/c:safe_ptr_hdr",
         "//tensorflow/c/eager:headers",
-        "//tensorflow/tsl/python/lib/core:numpy_hdr",
+        "@local_tsl//tsl/python/lib/core:numpy_hdr",
     ],
     features = [
         "-parse_headers",
@@ -241,9 +241,9 @@ cc_library(
         "//tensorflow/c:tf_status_headers",
         "//tensorflow/core:framework_internal_headers_lib",
         "//tensorflow/core/common_runtime:core_cpu_headers_lib",
-        "//tensorflow/tsl/python/lib/core:numpy",
         "//third_party/py/numpy:headers",
         "//third_party/python_runtime:headers",
+        "@local_tsl//tsl/python/lib/core:numpy",
     ],
 )
 
@@ -264,8 +264,8 @@ cc_library(
         "//tensorflow/core:framework",
         "//tensorflow/core:lib",
         "//tensorflow/python/lib/core:safe_pyobject_ptr",
-        "//tensorflow/tsl/python/lib/core:ml_dtypes_lib",
-        "//tensorflow/tsl/python/lib/core:numpy",
+        "@local_tsl//tsl/python/lib/core:ml_dtypes_lib",
+        "@local_tsl//tsl/python/lib/core:numpy",
     ],
 )
 
@@ -287,8 +287,8 @@ cc_library(
         "//tensorflow/c/eager:tfe_tensorhandle_internal",
         "//tensorflow/core:framework",
         "//tensorflow/core:lib",
-        "//tensorflow/tsl/python/lib/core:numpy",
         "//third_party/python_runtime:headers",  # build_cleaner: keep; DNR: b/35864863
+        "@local_tsl//tsl/python/lib/core:numpy",
     ],
 )
 

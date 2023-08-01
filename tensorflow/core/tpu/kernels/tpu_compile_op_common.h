@@ -19,14 +19,14 @@ limitations under the License.
 #include <memory>
 #include <string>
 #include <utility>
-#include <variant>
 #include <vector>
 
 #include "absl/types/span.h"
+#include "absl/types/variant.h"
 #include "tensorflow/compiler/jit/shape_inference.h"
 #include "tensorflow/compiler/tf2xla/xla_compiler.h"
-#include "tensorflow/compiler/xla/statusor.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_platform_interface.h"
+#include "xla/statusor.h"
+#include "xla/stream_executor/tpu/tpu_platform_interface.h"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/platform/fingerprint.h"
 #include "tensorflow/core/platform/strcat.h"
@@ -98,7 +98,7 @@ class TpuCompileOpKernelCommon {
   // Lowers Mlir or TF Function computation into HLO IR and using XLA compiler
   // compiles into TPU programs ready for execution.
   virtual Status Compile(
-      const std::variant<MlirToHloArgs, FunctionToHloArgs>& computation,
+      const absl::variant<MlirToHloArgs, FunctionToHloArgs>& computation,
       const XLA_TpuMeshState* mesh_state,
       const std::vector<TensorShape>& arg_shapes,
       const TpuCompilationCacheKey* key,

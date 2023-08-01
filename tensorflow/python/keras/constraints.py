@@ -24,9 +24,11 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import array_ops_stack
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import while_loop
+from tensorflow.python.util.tf_export import keras_export
 from tensorflow.tools.docs import doc_controls
 
 
+@keras_export('keras.constraints.Constraint')
 class Constraint:
   """Base class for weight constraints.
 
@@ -78,6 +80,7 @@ class Constraint:
     return {}
 
 
+@keras_export('keras.constraints.MaxNorm', 'keras.constraints.max_norm')
 class MaxNorm(Constraint):
   """MaxNorm weight constraint.
 
@@ -118,6 +121,7 @@ class MaxNorm(Constraint):
     return {'max_value': self.max_value, 'axis': self.axis}
 
 
+@keras_export('keras.constraints.NonNeg', 'keras.constraints.non_neg')
 class NonNeg(Constraint):
   """Constrains the weights to be non-negative.
 
@@ -128,6 +132,7 @@ class NonNeg(Constraint):
     return w * math_ops.cast(math_ops.greater_equal(w, 0.), backend.floatx())
 
 
+@keras_export('keras.constraints.UnitNorm', 'keras.constraints.unit_norm')
 class UnitNorm(Constraint):
   """Constrains the weights incident to each hidden unit to have unit norm.
 
@@ -162,6 +167,7 @@ class UnitNorm(Constraint):
     return {'axis': self.axis}
 
 
+@keras_export('keras.constraints.MinMaxNorm', 'keras.constraints.min_max_norm')
 class MinMaxNorm(Constraint):
   """MinMaxNorm weight constraint.
 
@@ -218,6 +224,8 @@ class MinMaxNorm(Constraint):
     }
 
 
+@keras_export('keras.constraints.RadialConstraint',
+              'keras.constraints.radial_constraint')
 class RadialConstraint(Constraint):
   """Constrains `Conv2D` kernel weights to be the same for each radius.
 
@@ -314,10 +322,12 @@ nonneg = non_neg
 unitnorm = unit_norm
 
 
+@keras_export('keras.constraints.serialize')
 def serialize(constraint):
   return serialize_keras_object(constraint)
 
 
+@keras_export('keras.constraints.deserialize')
 def deserialize(config, custom_objects=None):
   return deserialize_keras_object(
       config,
@@ -326,6 +336,7 @@ def deserialize(config, custom_objects=None):
       printable_module_name='constraint')
 
 
+@keras_export('keras.constraints.get')
 def get(identifier):
   if identifier is None:
     return None

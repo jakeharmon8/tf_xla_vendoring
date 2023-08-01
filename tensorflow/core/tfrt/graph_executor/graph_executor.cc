@@ -73,8 +73,8 @@ limitations under the License.
 #include "tensorflow/core/tfrt/stubs/tfrt_native_lowering_stub.h"
 #include "tensorflow/core/tfrt/utils/fallback_tensor.h"
 #include "tensorflow/core/tfrt/utils/utils.h"
-#include "tensorflow/tsl/platform/errors.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tsl/platform/errors.h"
+#include "tsl/platform/statusor.h"
 #include "tfrt/bef_converter/mlir_to_bef.h"  // from @tf_runtime
 #include "tfrt/core_runtime/core_runtime.h"  // from @tf_runtime
 #include "tfrt/host_context/async_dispatch.h"  // from @tf_runtime
@@ -445,7 +445,7 @@ StatusOr<std::unique_ptr<GraphExecutor>> GraphExecutor::Create(
   }
   if (options.enable_online_cost_analysis) {
     // Overrides cost_analysis_options.
-    options.cost_analysis_options.version = Options::CostAnalysisOptions::kOnce;
+    options.cost_analysis_options.version = Options::CostAnalysisOptions::ONCE;
   }
 
   TfrtGraphExecutionState::Options graph_execution_state_options;
@@ -560,10 +560,7 @@ tensorflow::Status GraphExecutor::Run(
 
   // Possibly record costs, depending on the particular setting of
   // `CostAnalysisOptions`.
-  auto now = absl::Now() + simulated_duration_;
-  bool do_recompilation;
-  CostRecorder* cost_recorder =
-      loaded_client_graph.MaybeGetCostRecorder(now, &do_recompilation);
+  CostRecorder* cost_recorder = loaded_client_graph.MaybeGetCostRecorder();
 
   std::vector<tensorflow::Tensor> flat_outputs;
   TF_RETURN_IF_ERROR(GraphExecutionRunOnFunction(
@@ -576,15 +573,13 @@ tensorflow::Status GraphExecutor::Run(
       &req_deadline_tracker_, cost_recorder,
       loaded_client_graph.stream_callback_id()));
 
-  if (do_recompilation) {
+  if (cost_recorder != nullptr) {
     TF_RETURN_IF_ERROR(
         loaded_client_graph.UpdateCost(*cost_recorder, runtime()));
     tensorflow::mutex_lock l(num_recompilations_mu_);
     num_recompilations_ += 1;
   }
-  if (cost_recorder != nullptr) {
-    loaded_client_graph.UpdateCostAnalysisData(now, do_recompilation);
-  }
+
   // Create the outputs from the actual function results, which are sorted
   // according to the output tensor names.
   auto flat_output_iter = flat_outputs.begin();
@@ -911,27 +906,13 @@ tensorflow::Status GraphExecutor::RunWithSyncInterpreter(
   return execution_context.status();
 }
 
-CostRecorder* GraphExecutor::LoadedClientGraph::MaybeGetCostRecorder(
-    absl::Time now, bool* do_recompilation) {
-  *do_recompilation = false;
+CostRecorder* GraphExecutor::LoadedClientGraph::MaybeGetCostRecorder() {
   tensorflow::mutex_lock l(cost_analysis_data_.mu);
   if (!cost_analysis_data_.is_available) {
     return nullptr;
   }
-  const auto& options = graph_executor_->options().cost_analysis_options;
-  absl::Duration elapsed_duration = now - cost_analysis_data_.start_time;
-  double intended_num_updates = absl::ToDoubleSeconds(elapsed_duration) /
-                                absl::ToDoubleSeconds(options.reset_interval) *
-                                options.updates_per_interval;
-  // Compare with the actual number of cost updates to decide whether or not to
-  // record costs for this particular execution.
-  if (intended_num_updates - cost_analysis_data_.num_cost_updates >= 1) {
-    cost_analysis_data_.is_available = false;
-    *do_recompilation = 1 + cost_analysis_data_.num_cost_updates >=
-                        options.updates_per_interval;
-    return cost_analysis_data_.cost_recorder.get();
-  }
-  return nullptr;
+  cost_analysis_data_.is_available = false;
+  return cost_analysis_data_.cost_recorder.get();
 }
 
 Status GraphExecutor::LoadedClientGraph::UpdateCost(
@@ -983,31 +964,11 @@ Status GraphExecutor::LoadedClientGraph::UpdateCost(
     // add a test kernel that examines the cost.
     executable_context_ = std::move(new_executable_context);
   }
+  // Free the cost analysis data if it will not be used again.
+  cost_analysis_data_.tfrt_mlir = nullptr;
+  cost_analysis_data_.tf_mlir_with_op_keys = nullptr;
+  cost_analysis_data_.cost_recorder = nullptr;
   return OkStatus();
-}
-
-void GraphExecutor::LoadedClientGraph::UpdateCostAnalysisData(
-    absl::Time now, bool do_recompilation) {
-  tensorflow::mutex_lock lock(cost_analysis_data_.mu);
-  if (!do_recompilation) {
-    cost_analysis_data_.num_cost_updates += 1;
-    cost_analysis_data_.is_available = true;
-    return;
-  }
-  if (graph_executor_->options().cost_analysis_options.version ==
-      Options::CostAnalysisOptions::kOnce) {
-    // Free the cost analysis data if it will not be used again.
-    cost_analysis_data_.is_available = false;
-    cost_analysis_data_.tfrt_mlir = nullptr;
-    cost_analysis_data_.tf_mlir_with_op_keys = nullptr;
-    cost_analysis_data_.cost_recorder = nullptr;
-  } else {
-    // Update cost analysis data.
-    cost_analysis_data_.cost_recorder = std::make_unique<CostRecorder>();
-    cost_analysis_data_.is_available = true;
-    cost_analysis_data_.start_time = now;
-    cost_analysis_data_.num_cost_updates = 0;
-  }
 }
 
 tensorflow::Status GraphExecutor::CompileGraph(

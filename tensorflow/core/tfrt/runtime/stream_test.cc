@@ -22,8 +22,8 @@ limitations under the License.
 #include <gtest/gtest.h>
 #include "tensorflow/core/framework/tensor_testutil.h"
 #include "tensorflow/core/tfrt/saved_model/saved_model_testutil.h"
-#include "tensorflow/tsl/platform/env.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tsl/platform/env.h"
+#include "tsl/platform/statusor.h"
 
 namespace tensorflow {
 namespace tfrt_stub {

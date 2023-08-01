@@ -30,7 +30,6 @@ limitations under the License.
 #include "tensorflow/lite/allocation.h"
 #include "tensorflow/lite/c/common_internal.h"
 #include "tensorflow/lite/core/api/error_reporter.h"
-#include "tensorflow/lite/core/api/op_resolver.h"
 #include "tensorflow/lite/core/api/profiler.h"
 #include "tensorflow/lite/core/c/common.h"
 #include "tensorflow/lite/core/macros.h"
@@ -57,7 +56,6 @@ class AsyncSubgraph;  // Class for friend declarations.
 namespace impl {
 class Interpreter;         // Class for friend declarations.
 class InterpreterBuilder;  // Class for friend declarations.
-class SignatureRunner;     // Class for friend declarations.
 }  // namespace impl
 
 namespace delegates {
@@ -71,7 +69,7 @@ class Subgraph {
  public:
 #ifndef DOXYGEN_SKIP
   friend class ::tflite::impl::Interpreter;
-  friend class ::tflite::impl::SignatureRunner;
+  friend class SignatureRunner;
   friend class SingleOpModel;
   friend class internal::CommonOpaqueConversionUtil;
 #endif  // DOXYGEN_SKIP
@@ -952,13 +950,11 @@ class Subgraph {
   // the TfLiteRegistrationExternal objects contained in this fielld.
   //
   // LINT.IfChange
-  // The definition of RegistrationExternalsCache implicitly assumes that
-  // TfLiteRegistrationExternalDelete is the same as the standard C++ delete
-  // operator.
-  // TODO(b/238435088): in op_resolver, include registration_external.h and use
-  // 'TfLiteRegistrationExternalDelete' as the deleter, then we can eliminate
-  // the IfChange...ThenChange directive below.
-  std::shared_ptr<::tflite::internal::RegistrationExternalsCache>
+  // Ideally we could include c_api.h and use
+  // 'TfLiteRegistrationExternalDelete' as the deleter,  but that would create a
+  // dependency cycle.
+  std::unordered_set<  // NOLINT
+      std::unique_ptr<const TfLiteRegistrationExternal>>
       registration_externals_;
   // LINT.ThenChange(//tensorflow/lite/core/c/c_api.cc)
 

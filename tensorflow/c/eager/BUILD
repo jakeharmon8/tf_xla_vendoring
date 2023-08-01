@@ -889,11 +889,11 @@ tf_cuda_library(
         "//tensorflow/core/distributed_runtime/rpc:grpc_worker_service",
         "//tensorflow/core/distributed_runtime/rpc:rpc_rendezvous_mgr",
         "//tensorflow/core/distributed_runtime/rpc/eager:grpc_eager_client",
-        "//tensorflow/tsl/distributed_runtime/coordination:coordination_service_agent",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
+        "@local_tsl//tsl/distributed_runtime/coordination:coordination_service_agent",
     ],
     alwayslink = 1,
 )
@@ -1095,25 +1095,6 @@ cc_library(
         "@dlpack",
     ],
     alwayslink = 1,
-)
-
-tf_cuda_cc_test(
-    name = "dlpack_test",
-    size = "small",
-    srcs = [
-        "dlpack_test.cc",
-    ],
-    args = [],
-    tags = [],
-    deps = [
-        ":c_api",
-        ":dlpack",
-        "//tensorflow/core:test",
-        "//tensorflow/core:test_main",
-        "//tensorflow/core/platform:status",
-        "@com_google_absl//absl/strings",
-        "@dlpack",
-    ],
 )
 
 # TODO(karllessard): only used by //tensorflow/core:mobile_srcs_only_runtime

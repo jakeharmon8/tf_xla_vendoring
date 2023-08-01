@@ -54,8 +54,8 @@ limitations under the License.
 #include "tensorflow/compiler/mlir/tensorflow/utils/tpu_rewrite_device_util.h"
 #include "tensorflow/compiler/mlir/tensorflow/utils/xla_rewrite_util.h"
 #include "tensorflow/compiler/mlir/tensorflow/utils/xla_sharding_util.h"
-#include "tensorflow/compiler/xla/xla.pb.h"
-#include "tensorflow/compiler/xla/xla_data.pb.h"
+#include "xla/xla.pb.h"
+#include "xla/xla_data.pb.h"
 #include "tensorflow/core/framework/tensor_shape.h"
 #include "tensorflow/core/framework/tensor_shape.pb.h"
 #include "tensorflow/core/framework/types.pb.h"
@@ -264,9 +264,9 @@ LogicalResult SetMetadataProtoArgs(
     // Populate set_is_same_data_across_replicas
     // Note: this information is duplicated and can be removed from the proto
     // and here once MLIR bridge phase 2 doesn't fallback to the old bridge.
-    auto attr = op.getFuncOp().getArgAttrOfType<mlir::BoolAttr>(
+    mlir::UnitAttr attr = op.getFuncOp().getArgAttrOfType<mlir::UnitAttr>(
         index, replication_attr_name);
-    arg->set_is_same_data_across_replicas(attr != nullptr && attr.getValue());
+    arg->set_is_same_data_across_replicas(attr != nullptr);
 
     // Currently only support first dimension to be bounded dynamic.
     arg->mutable_is_bounded_dynamic_dim()->Add(

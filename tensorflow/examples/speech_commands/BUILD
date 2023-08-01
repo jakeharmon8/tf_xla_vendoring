@@ -442,12 +442,12 @@ py_strict_library(
     name = "test_lib",
     srcs_version = "PY3",
     deps = [
-        ":freeze_main_lib",
-        ":generate_streaming_test_wav_main_lib",
+        ":freeze",
+        ":generate_streaming_test_wav",
         ":input_data",
-        ":label_wav_main_lib",
+        ":label_wav",
         ":models",
-        ":train_main_lib",
-        ":wav_to_features_main_lib",
+        ":train",
+        ":wav_to_features",
     ],
 )

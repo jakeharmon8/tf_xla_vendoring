@@ -68,9 +68,9 @@ tf_python_pybind_extension(
         "//tensorflow/core:framework_headers_lib",
         "//tensorflow/core:lib_headers_for_pybind",
         "//tensorflow/core/profiler/internal:print_model_analysis_hdr",
-        "//third_party/eigen3",
         "//third_party/python_runtime:headers",
         "@com_google_absl//absl/strings",
+        "@eigen_archive//:eigen3",
         "@pybind11",
     ],
 )
@@ -135,10 +135,10 @@ tf_python_pybind_extension(
         "//tensorflow/core:framework_headers_lib",
         "//tensorflow/core:protos_all_cc",
         "//tensorflow/core/util:stat_summarizer",
-        "//tensorflow/tsl/util:stats_calculator_portable",
-        "//third_party/eigen3",
         "//third_party/python_runtime:headers",
         "@com_google_absl//absl/memory",
+        "@eigen_archive//:eigen3",
+        "@local_tsl//tsl/util:stats_calculator_portable",
         "@pybind11",
     ],
 )
@@ -149,6 +149,7 @@ tf_python_pybind_extension(
     hdrs = ["//tensorflow/core/platform:tensor_float_32_hdr"],
     compatible_with = get_compatible_with_portable(),
     deps = [
+        "//tensorflow/core/platform:tensor_float_32_hdr_lib",
         "@pybind11",
     ],
 )
@@ -159,6 +160,7 @@ tf_python_pybind_extension(
     hdrs = ["//tensorflow/core/util:determinism_hdr"],
     compatible_with = get_compatible_with_portable(),
     deps = [
+        "//tensorflow/core/util:determinism_hdr_lib",
         "@pybind11",
     ],
 )
@@ -366,6 +368,8 @@ py_strict_library(
     ],
 )
 
+# Note: this is a heavyweight library specialized for TensorFlow graphs. Do not use for
+# other purposes.
 py_strict_library(
     name = "tf_stack",
     srcs = ["tf_stack.py"],
@@ -374,7 +378,6 @@ py_strict_library(
     visibility = ["//visibility:public"],
     deps = [
         ":_tf_stack",
-        "//tensorflow/core:protos_all_py",
         "@six_archive//:six",
     ],
 )
@@ -399,8 +402,6 @@ tf_python_pybind_extension(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
         "@pybind11",
-        "@pybind11_abseil//pybind11_abseil:absl_casters",
-        "@pybind11_abseil//pybind11_abseil:status_casters",
     ] + if_static([
         ":stack_trace",
     ]),
@@ -423,11 +424,11 @@ cc_library(
     deps = [
         "//tensorflow/core/platform:status",
         "//tensorflow/core/util:managed_stack_trace",
-        "//tensorflow/tsl/platform:fingerprint",
         "//third_party/python_runtime:headers",  # buildcleaner: keep
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:inlined_vector",
+        "@local_tsl//tsl/platform:fingerprint",
     ],
 )
 

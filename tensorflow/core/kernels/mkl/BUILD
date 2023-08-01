@@ -29,14 +29,14 @@ MKL_SHORT_DEPS = [
 ] + mkl_deps()
 
 MKL_DEPS = MKL_SHORT_DEPS + [
-    "//third_party/eigen3",
+    "@eigen_archive//:eigen3",
     "//tensorflow/core:array_grad",
     "//tensorflow/core:math_grad",
     "//tensorflow/core:nn_grad",
     "//tensorflow/core:protos_all_cc",
     "//tensorflow/core/kernels:concat_lib",
     "//tensorflow/core/kernels:conv_2d",
-    "//tensorflow/tsl/framework/contraction:eigen_contraction_kernel",
+    "@local_tsl//tsl/framework/contraction:eigen_contraction_kernel",
     "//tensorflow/core/kernels:fill_functor",
     "//tensorflow/core/kernels:gather_functor",
     "//tensorflow/core/kernels:transpose_functor",
@@ -66,7 +66,6 @@ tf_mkl_kernel_library(
         "mkl_matmul_ops_common.h",
     ],
     deps = [
-        "//tensorflow/core:graph",
         "//tensorflow/core/kernels:batch_matmul_op",
         "//tensorflow/core/kernels:matmul_op",
     ] + MKL_DEPS,
@@ -81,7 +80,6 @@ tf_mkl_kernel_library(
         "mkl_matmul_ops_common.h",
     ],
     deps = [
-        "//tensorflow/core:graph",
         "//tensorflow/core/kernels/linalg:einsum_op",
     ] + MKL_DEPS,
 )
@@ -96,9 +94,7 @@ tf_mkl_kernel_library(
         "mkl_kernel_util.h",
         "mkl_matmul_ops_common.h",
     ],
-    deps = [
-        "//tensorflow/core:graph",
-    ] + MKL_DEPS,
+    deps = MKL_DEPS,
 )
 
 tf_cc_test_mkl(
@@ -218,7 +214,6 @@ tf_mkl_kernel_library(
         "mkl_quantized_conv_ops.h",
     ],
     deps = [
-        "//tensorflow/core:graph",
         "//tensorflow/core:math_ops_op_lib",
         "//tensorflow/core:mkl_nn_ops_op_lib",
         "//tensorflow/core:nn_ops_op_lib",
@@ -362,7 +357,7 @@ tf_mkl_kernel_library(
     prefix = "mkl_softmax",
     deps = [
         "//tensorflow/core/graph:mkl_graph_util",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
     ] + MKL_SHORT_DEPS,
 )
 

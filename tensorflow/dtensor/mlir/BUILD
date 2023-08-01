@@ -221,6 +221,7 @@ cc_library(
         ":dtensor_location",
         ":dtensor_passes_inc_gen",
         ":dtensor_send_recv",
+        ":group_assignment",
         ":layout_parsing",
         ":op_utils",
         ":shape_utils",
@@ -228,7 +229,6 @@ cc_library(
         ":spmd_expander",
         ":spmd_expander_common",
         ":tf_dtensor_dialect",
-        ":topological_iterator",
         ":value_utils",
         "//tensorflow/compiler/mlir/tensorflow",
         "//tensorflow/compiler/mlir/tensorflow:attribute_utils",
@@ -236,15 +236,12 @@ cc_library(
         "//tensorflow/compiler/mlir/tensorflow:convert_tensor",
         "//tensorflow/compiler/mlir/tensorflow:dump_mlir_util",
         "//tensorflow/compiler/mlir/tensorflow:error_util",
-        "//tensorflow/compiler/mlir/tensorflow:tensorflow_analysis",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_attributes",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_ops",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_passes",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_types",
         "//tensorflow/compiler/mlir/tensorflow:tpu_rewrite_device_util",
         "//tensorflow/compiler/mlir/utils:name_utils",
-        "//tensorflow/compiler/xla:xla_data_proto_cc",
-        "//tensorflow/compiler/xla/client:sharding_builder",
         "//tensorflow/core:core_cpu_base",
         "//tensorflow/core:lib",
         "//tensorflow/dtensor/cc:constants",
@@ -266,6 +263,8 @@ cc_library(
         "@llvm-project//mlir:SparseTensorDialect",
         "@llvm-project//mlir:Support",
         "@llvm-project//mlir:Transforms",
+        "@local_xla//xla:xla_data_proto_cc",
+        "@local_xla//xla/client:sharding_builder",
     ],
     alwayslink = 1,
 )
@@ -295,6 +294,34 @@ cc_library(
         "@llvm-project//mlir:Support",
     ],
     alwayslink = True,
+)
+
+cc_library(
+    name = "group_assignment",
+    srcs = ["group_assignment.cc"],
+    hdrs = ["group_assignment.h"],
+    deps = [
+        "//tensorflow/core:lib",
+        "//tensorflow/dtensor/cc:dstatus",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@llvm-project//llvm:Support",
+        "@llvm-project//mlir:IR",
+    ],
+)
+
+tf_cc_test(
+    name = "group_assignment_test",
+    srcs = ["group_assignment_test.cc"],
+    deps = [
+        ":group_assignment",
+        "//tensorflow/core:lib",
+        "//tensorflow/core:test",
+        "//tensorflow/core:test_main",
+        "//tensorflow/dtensor/cc:dstatus",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@llvm-project//llvm:Support",
+        "@llvm-project//mlir:IR",
+    ],
 )
 
 cc_library(
@@ -415,7 +442,6 @@ cc_library(
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_attributes",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_ops",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_passes",
-        "//tensorflow/compiler/xla/mlir_hlo:convert_op_folder",
         "//tensorflow/core:lib",
         "//tensorflow/dtensor/cc:constants",
         "//tensorflow/dtensor/cc:dstatus",
@@ -426,6 +452,7 @@ cc_library(
         "@llvm-project//mlir:FuncDialect",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",
+        "@local_xla//xla/mlir_hlo:convert_op_folder",
     ],
     alwayslink = True,
 )
@@ -455,14 +482,12 @@ cc_library(
         ":spmd_expander_common",
         ":tf_dtensor_dialect",
         ":value_utils",
-        "//tensorflow/cc:ops",
         "//tensorflow/compiler/mlir/tensorflow",
         "//tensorflow/compiler/mlir/tensorflow:convert_tensor",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_attributes",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_ops",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_passes",
         "//tensorflow/compiler/mlir/utils:array_container_utils",
-        "//tensorflow/compiler/xla/mlir_hlo:convert_op_folder",
         "//tensorflow/core:framework",
         "//tensorflow/core:lib",
         "//tensorflow/dtensor/cc:constants",
@@ -483,6 +508,7 @@ cc_library(
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:InferTypeOpInterface",
         "@llvm-project//mlir:Support",
+        "@local_xla//xla/mlir_hlo:convert_op_folder",
     ],
     alwayslink = 1,
 )
@@ -499,30 +525,11 @@ cc_library(
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_types",
         "//tensorflow/core:lib",
         "//tensorflow/dtensor/cc:dstatus",
-        "//tensorflow/tsl/protobuf:error_codes_proto_impl_cc",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
+        "@local_tsl//tsl/protobuf:error_codes_proto_impl_cc",
     ],
     alwayslink = True,
-)
-
-cc_library(
-    name = "topological_iterator",
-    srcs = ["topological_iterator.cc"],
-    hdrs = ["topological_iterator.h"],
-    deps = [
-        ":device_utils",
-        ":layout_parsing",
-        ":op_utils",
-        ":shape_utils",
-        ":tf_dtensor_dialect",
-        ":value_utils",
-        "//tensorflow/compiler/mlir/tensorflow",
-        "//tensorflow/compiler/mlir/tensorflow:tensorflow_ops",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//mlir:FuncDialect",
-        "@llvm-project//mlir:IR",
-    ],
 )
 
 tf_cc_test(

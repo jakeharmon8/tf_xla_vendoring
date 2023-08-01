@@ -16,11 +16,10 @@ limitations under the License.
 
 #include <memory>
 #include <string>
-#include <variant>
 #include <vector>
 
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_ops_c_api.h"
-#include "tensorflow/core/platform/status.h"
+#include "xla/status.h"
+#include "xla/stream_executor/tpu/tpu_ops_c_api.h"
 #include "tensorflow/core/tpu/kernels/tpu_compile.pb.h"
 #include "tensorflow/core/tpu/kernels/tpu_compile_op_support.h"
 #include "tensorflow/core/tpu/kernels/tpu_program_group.h"
@@ -31,7 +30,7 @@ namespace tpu {
 using tsl::StatusOr;
 
 Status TpuCompileOpKernelImpl::Compile(
-    const std::variant<MlirToHloArgs, FunctionToHloArgs>& computation,
+    const absl::variant<MlirToHloArgs, FunctionToHloArgs>& computation,
     const XLA_TpuMeshState* mesh_state,
     const std::vector<TensorShape>& arg_shapes,
     const TpuCompilationCacheKey* key,

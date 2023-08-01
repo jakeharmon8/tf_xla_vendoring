@@ -22,18 +22,17 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "tensorflow/compiler/tf2xla/shape_util.h"
 #include "tensorflow/compiler/tf2xla/type_util.h"
 #include "tensorflow/compiler/tf2xla/xla_helpers.h"
 #include "tensorflow/compiler/tf2xla/xla_op_kernel.h"
 #include "tensorflow/compiler/tf2xla/xla_op_registry.h"
-#include "tensorflow/compiler/xla/client/lib/arithmetic.h"
-#include "tensorflow/compiler/xla/client/lib/constants.h"
-#include "tensorflow/compiler/xla/client/xla_builder.h"
-#include "tensorflow/compiler/xla/literal_util.h"
-#include "tensorflow/compiler/xla/util.h"
+#include "xla/client/lib/arithmetic.h"
+#include "xla/client/lib/constants.h"
+#include "xla/client/xla_builder.h"
+#include "xla/literal_util.h"
+#include "xla/util.h"
 #include "tensorflow/core/framework/bounds_check.h"
 #include "tensorflow/core/framework/kernel_shape_util.h"
 #include "tensorflow/core/framework/node_def_util.h"
@@ -45,7 +44,7 @@ limitations under the License.
 #include "tensorflow/core/kernels/conv_grad_shape_utils.h"
 #include "tensorflow/core/util/padding.h"
 #include "tensorflow/core/util/tensor_format.h"
-#include "tensorflow/tsl/platform/tensor_float_32_utils.h"
+#include "tsl/platform/tensor_float_32_utils.h"
 
 namespace tensorflow {
 namespace {
@@ -203,34 +202,6 @@ StatusOr<ConvOpAttrs> ConvOpAttrs::Create(int num_spatial_dims, bool depthwise,
   TF_RETURN_IF_ERROR(CheckValidPadding(attrs.padding, attrs.explicit_paddings,
                                        /*num_dims=*/num_spatial_dims + 2,
                                        attrs.data_format));
-
-  return attrs;
-}
-
-StatusOr<ConvNDOpAttrs> ConvNDOpAttrs::Create(OpKernelConstruction* ctx) {
-  ConvNDOpAttrs attrs;
-  TF_RETURN_IF_ERROR(ctx->GetAttr("groups", &attrs.groups));
-  TF_RETURN_IF_ERROR(ctx->GetAttr("batch_dims", &attrs.batch_dims));
-  if (attrs.batch_dims < 1) {
-    return absl::InvalidArgumentError("batch_dims must be non-negative.");
-  }
-  TF_RETURN_IF_ERROR(ctx->GetAttr("dilations", &attrs.dilations));
-  TF_RETURN_IF_ERROR(ctx->GetAttr("strides", &attrs.strides));
-  TF_RETURN_IF_ERROR(ctx->GetAttr("padding", &attrs.padding));
-  if (attrs.padding == EXPLICIT) {
-    TF_RETURN_IF_ERROR(
-        ctx->GetAttr("explicit_paddings", &attrs.explicit_paddings));
-  }
-
-  string data_format_str;
-  TF_RETURN_IF_ERROR(ctx->GetAttr("data_format", &data_format_str));
-  if (!(data_format_str == "CHANNELS_LAST" ||
-        data_format_str == "CHANNELS_FIRST")) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Unknown data format: ", data_format_str));
-  }
-  attrs.data_format =
-      data_format_str == "CHANNELS_LAST" ? FORMAT_NHWC : FORMAT_NCHW;
 
   return attrs;
 }

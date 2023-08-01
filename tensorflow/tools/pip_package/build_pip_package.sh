@@ -47,22 +47,6 @@ function cp_external() {
   cp "${src_dir}/local_config_cuda/cuda/cuda/cuda_config.h" "${dest_dir}/local_config_cuda/cuda/cuda/"
 }
 
-function cp_local_config_python() {
-  local src_dir=$1
-  local dest_dir=$2
-  pushd .
-  cd "$src_dir"
-  mkdir -p "${dest_dir}/local_config_python/numpy_include/"
-  cp -r "pypi_numpy/site-packages/numpy/core/include/numpy" "${dest_dir}/local_config_python/numpy_include/"
-  mkdir -p "${dest_dir}/local_config_python/python_include/"
-  if is_windows; then
-    cp -r python_*/include/* "${dest_dir}/local_config_python/python_include/"
-  else
-    cp -r python_*/include/python*/* "${dest_dir}/local_config_python/python_include/"
-  fi
-  popd
-}
-
 function copy_xla_aot_runtime_sources() {
   local src_dir=$1
   local dst_dir=$2
@@ -174,9 +158,6 @@ function prepare_src() {
     cp_external \
       bazel-bin/tensorflow/tools/pip_package/simple_console_for_window_unzip/runfiles \
       "${EXTERNAL_INCLUDES}/"
-    cp_local_config_python \
-      bazel-bin/tensorflow/tools/pip_package/simple_console_for_window_unzip/runfiles \
-      "${EXTERNAL_INCLUDES}/"
     copy_xla_aot_runtime_sources \
       bazel-bin/tensorflow/tools/pip_package/simple_console_for_window_unzip/runfiles/org_tensorflow \
       "${XLA_AOT_RUNTIME_SOURCES}/"
@@ -220,41 +201,43 @@ function prepare_src() {
       cp_external \
         bazel-bin/tensorflow/tools/pip_package/build_pip_package.runfiles/org_tensorflow/external \
         "${EXTERNAL_INCLUDES}"
-      cp_local_config_python \
-        bazel-bin/tensorflow/tools/pip_package/build_pip_package.runfiles/org_tensorflow/external \
-        "${EXTERNAL_INCLUDES}"
     else
       # New-style runfiles structure (--nolegacy_external_runfiles).
       cp_external \
-        bazel-bin/tensorflow/tools/pip_package/build_pip_package.runfiles \
-        "${EXTERNAL_INCLUDES}"
-      cp_local_config_python \
         bazel-bin/tensorflow/tools/pip_package/build_pip_package.runfiles \
         "${EXTERNAL_INCLUDES}"
     fi
     copy_xla_aot_runtime_sources \
       bazel-bin/tensorflow/tools/pip_package/build_pip_package.runfiles/org_tensorflow \
       "${XLA_AOT_RUNTIME_SOURCES}"
+    # Move vendored files into proper locations
+    # This is required because TSL/XLA don't publish their own wheels
+    cp -r bazel-bin/external/local_tsl/tsl/ ${TMPDIR}/tensorflow/tsl
+    cp -r bazel-bin/external/local_xla/xla/ ${TMPDIR}/tensorflow/compiler/xla
+    # Fix the proto stubs
+    find ${TMPDIR}/tensorflow/ -name "*.py" -type f -exec sed -i -e 's/from tsl./from tensorflow.tsl./' {} \;
+    find ${TMPDIR}/tensorflow/ -name "*.py" -type f -exec sed -i -e 's/from local_xla.xla/from tensorflow.compiler.xla/' {} \;
+    find ${TMPDIR}/tensorflow/ -name "*.py" -type f -exec sed -i -e 's/from xla/from tensorflow.compiler.xla/' {} \;
     # Copy MKL libs over so they can be loaded at runtime
     # TODO(b/271299337): shared libraries that depend on libml_dtypes.so.so have
     # their NEEDED and RUNPATH set corresponding to a dependency on
     # RUNFILES/_solib_local/libtensorflow_Stsl_Spython_Slib_Score_Slibml_dtypes.so.so,
-    # which is a symlink to tensorflow/tsl/python/lib/core/libml_dtypes.so in
+    # which is a symlink to tensorflow/include/external/local_tsl/tsl/python/lib/core/libml_dtypes.so in
     # the Bazel build tree. We do not export the file in _solib_local (nor
     # symlinks in general, I think Python wheels have poor support for them?)
     so_lib_dir=$(ls $RUNFILES | grep solib)
     if is_macos; then
       chmod +rw ${TMPDIR}/tensorflow/tsl/python/lib/core/pywrap_ml_dtypes.so
       chmod +rw ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so
-      install_name_tool -change "@loader_path/../../../../../${so_lib_dir}//libtensorflow_Stsl_Spython_Slib_Score_Slibml_Udtypes.so.dylib" "@loader_path/libml_dtypes.so.dylib" ${TMPDIR}/tensorflow/tsl/python/lib/core/pywrap_ml_dtypes.so
-      install_name_tool -change "@loader_path/../../${so_lib_dir}//libtensorflow_Stsl_Spython_Slib_Score_Slibml_Udtypes.so.dylib" "@loader_path/../tsl/python/lib/core/libml_dtypes.so.dylib" ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so
+      install_name_tool -change "@loader_path/../../../../../${so_lib_dir}//libexternal_Slocal_Utsl_Stsl_Spython_Slib_Score_Slibml_Udtypes.so.dylib" "@loader_path/libml_dtypes.so.dylib" ${TMPDIR}/tensorflow/tsl/python/lib/core/pywrap_ml_dtypes.so
+      install_name_tool -change "@loader_path/../../${so_lib_dir}//libexternal_Slocal_Utsl_Stsl_Spython_Slib_Score_Slibml_Udtypes.so.dylib" "@loader_path/../tsl/python/lib/core/libml_dtypes.so.dylib" ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so
     else
       chmod +rw ${TMPDIR}/tensorflow/tsl/python/lib/core/pywrap_ml_dtypes.so
       chmod +rw ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so
-      patchelf --replace-needed libtensorflow_Stsl_Spython_Slib_Score_Slibml_Udtypes.so.so libml_dtypes.so.so ${TMPDIR}/tensorflow/tsl/python/lib/core/pywrap_ml_dtypes.so
-      patchelf --replace-needed libtensorflow_Stsl_Spython_Slib_Score_Slibml_Udtypes.so.so libml_dtypes.so.so ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so
+      patchelf --replace-needed libexternal_Slocal_Utsl_Stsl_Spython_Slib_Score_Slibml_Udtypes.so.so libml_dtypes.so.so ${TMPDIR}/tensorflow/tsl/python/lib/core/pywrap_ml_dtypes.so
+      patchelf --replace-needed libexternal_Slocal_Utsl_Stsl_Spython_Slib_Score_Slibml_Udtypes.so.so libml_dtypes.so.so ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so
       patchelf --set-rpath $(patchelf --print-rpath ${TMPDIR}/tensorflow/tsl/python/lib/core/pywrap_ml_dtypes.so):\$ORIGIN ${TMPDIR}/tensorflow/tsl/python/lib/core/pywrap_ml_dtypes.so
-      patchelf --set-rpath $(patchelf --print-rpath ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so):\$ORIGIN/../tsl/python/lib/core ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so
+      patchelf --set-rpath $(patchelf --print-rpath ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so):\$ORIGIN/../../tensorflow/tsl/python/lib/core ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so
       patchelf --shrink-rpath ${TMPDIR}/tensorflow/tsl/python/lib/core/pywrap_ml_dtypes.so
       patchelf --shrink-rpath ${TMPDIR}/tensorflow/python/_pywrap_tensorflow_internal.so
     fi

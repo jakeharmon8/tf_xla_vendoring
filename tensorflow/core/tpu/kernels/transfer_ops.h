@@ -21,8 +21,8 @@ limitations under the License.
 #include <string>
 
 #include "tensorflow/compiler/jit/xla_device.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_platform_interface.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_transfer_manager_interface.h"
+#include "xla/stream_executor/tpu/tpu_platform_interface.h"
+#include "xla/stream_executor/tpu/tpu_transfer_manager_interface.h"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/util/stream_executor_util.h"
 

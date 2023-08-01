@@ -1,7 +1,7 @@
 // RUN: tf-tfrt-opt -tfrt-xla-rewrite %s | FileCheck %s --dump-input=fail
 
 // CHECK-LABEL: xla_launch
-func.func @xla_launch(%arg: tensor<i32>, %v0: tensor<*x!tf_type.resource>, %v1: tensor<*x!tf_type.resource>) -> (tensor<i32>) {
+func.func @local_xla_launch(%arg: tensor<i32>, %v0: tensor<*x!tf_type.resource>, %v1: tensor<*x!tf_type.resource>) -> (tensor<i32>) {
   %c0 = "tf.Const"() {device = "/device:CPU:0", value = dense<0> : tensor<i32>} : () -> tensor<i32>
   %c1 = "tf.Const"() {device = "/device:CPU:0", value = dense<0> : tensor<i32>} : () -> tensor<i32>
 

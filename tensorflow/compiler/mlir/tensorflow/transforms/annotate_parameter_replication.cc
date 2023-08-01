@@ -88,8 +88,7 @@ void AnnotateParameterReplicationPass::runOnOperation() {
         // Not a replication-invariant operand.
         continue;
       }
-      func.setArgAttr(entry.index(), kReplicationAttr,
-                      builder.getBoolAttr(true));
+      func.setArgAttr(entry.index(), kReplicationAttr, builder.getUnitAttr());
     }
   });
 }

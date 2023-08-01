@@ -35,10 +35,10 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #if !defined(IS_MOBILE_PLATFORM) && !defined(IS_SLIM_BUILD)
 #include "tensorflow/c/experimental/stream_executor/stream_executor_internal.h"
-#include "tensorflow/compiler/xla/stream_executor/stream.h"
+#include "xla/stream_executor/stream.h"
 #include "tensorflow/core/framework/device.h"
-#include "tensorflow/tsl/framework/device_id_utils.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tsl/framework/device_id_utils.h"
+#include "tsl/platform/statusor.h"
 #endif  // !defined(IS_MOBILE_PLATFORM) && !defined(IS_SLIM_BUILD)
 
 using tensorflow::errors::InvalidArgument;

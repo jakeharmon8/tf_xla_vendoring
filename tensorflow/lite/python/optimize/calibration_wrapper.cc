@@ -209,7 +209,7 @@ CalibrationWrapper::CalibrationWrapper(
       reader_(std::move(reader)),
       model_str_(std::move(model_str)) {}
 
-CalibrationWrapper::~CalibrationWrapper() = default;
+CalibrationWrapper::~CalibrationWrapper() {}
 
 PyObject* CalibrationWrapper::Prepare() {
   TFLITE_PY_ENSURE_VALID_INTERPRETER();
@@ -220,7 +220,7 @@ PyObject* CalibrationWrapper::Prepare() {
 
 PyObject* CalibrationWrapper::Prepare(std::string signature_key) {
   TFLITE_PY_ENSURE_VALID_INTERPRETER();
-  impl::SignatureRunner* runner =
+  SignatureRunner* runner =
       interpreter_->GetSignatureRunner(signature_key.c_str());
   if (runner == nullptr) {
     PyErr_Format(PyExc_ValueError, "Invalid signature key: %s",

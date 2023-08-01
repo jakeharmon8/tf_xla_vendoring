@@ -19,7 +19,7 @@ limitations under the License.
 #include <optional>
 
 #include "absl/strings/match.h"
-#include "third_party/eigen3/Eigen/Core"
+#include "Eigen/Core"  // from @eigen_archive
 #include "tensorflow/core/framework/attr_value.pb.h"
 #include "tensorflow/core/framework/attr_value_util.h"
 #include "tensorflow/core/framework/tensor.pb.h"

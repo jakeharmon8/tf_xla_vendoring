@@ -53,7 +53,6 @@ limitations under the License.
 #include "tensorflow/dtensor/mlir/op_utils.h"
 #include "tensorflow/dtensor/mlir/spmd_expander.h"
 #include "tensorflow/dtensor/mlir/spmd_expander_common.h"
-#include "tensorflow/dtensor/mlir/topological_iterator.h"
 
 namespace tensorflow {
 namespace dtensor {

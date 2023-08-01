@@ -2,7 +2,7 @@ load("//tensorflow:tensorflow.default.bzl", "get_compatible_with_portable")
 load("//tensorflow:tensorflow.bzl", "tf_cc_binary", "tf_cc_test")
 load("//tensorflow/core/platform:build_config.bzl", "tf_proto_library")
 load("//tensorflow/compiler/mlir/quantization/stablehlo:internal_visibility_allowlist.bzl", "internal_visibility_allowlist")
-load("@llvm-project//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
+load("@llvm-project//mlir:tblgen.bzl", "gentbl_cc_library")
 
 # TODO(b/264218457): Create stablehlo-quantization-opt and register passes to actually test.
 
@@ -31,7 +31,6 @@ cc_library(
     name = "passes",
     srcs = [
         "passes/prepare_srq_quantize.cc",
-        "passes/prepare_srq_quantize.inc",
         "passes/quantize_weight.cc",
     ],
     hdrs = [
@@ -45,7 +44,7 @@ cc_library(
         "//tensorflow/compiler/mlir/lite/quantization:quantization_lib",
         "//tensorflow/compiler/mlir/lite/quantization/ir:QuantOps",
         "//tensorflow/core/platform:path",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:AllPassesAndDialects",
         "@llvm-project//mlir:FuncDialect",
@@ -60,33 +59,6 @@ cc_library(
     # Alwayslink is required for registering the MLIR passes.
     # TODO(b/255530126): Split the pass registration from the definitions to avoid binary size bloat.
     alwayslink = True,
-)
-
-td_library(
-    name = "quant_td_files",
-    srcs = [
-        "passes/prepare_srq_quantize.td",
-    ],
-    compatible_with = get_compatible_with_portable(),
-    deps = [
-        "@llvm-project//mlir:ArithOpsTdFiles",
-        "@llvm-project//mlir:FuncTdFiles",
-        "@stablehlo//:stablehlo_ops_td_files",
-    ],
-)
-
-gentbl_cc_library(
-    name = "prepare_srq_quantize_inc_gen",
-    compatible_with = get_compatible_with_portable(),
-    tbl_outs = [
-        (
-            ["-gen-rewriters"],
-            "passes/prepare_srq_quantize.inc",
-        ),
-    ],
-    tblgen = "@llvm-project//mlir:mlir-tblgen",
-    td_file = "passes/prepare_srq_quantize.td",
-    deps = [":quant_td_files"],
 )
 
 gentbl_cc_library(
@@ -113,14 +85,14 @@ cc_library(
     srcs = [
         "passes/bridge/convert_mhlo_quant_to_int.cc",
         "passes/bridge/convert_tf_quant_ops_to_mhlo.cc",
-        "passes/bridge/convert_tf_quant_types.cc",
     ],
     hdrs = [
         "passes/bridge/passes.h",
     ],
     compatible_with = get_compatible_with_portable(),
     visibility = [
-        "//tensorflow/compiler/mlir:__subpackages__",
+        "//tensorflow/compiler/mlir/lite:__subpackages__",
+        "//tensorflow/compiler/mlir/tf2xla:__subpackages__",
     ],
     deps = [
         ":bridge_passes_inc_gen",
@@ -130,12 +102,7 @@ cc_library(
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_types",
         "//tensorflow/compiler/mlir/tf2xla/transforms:legalize_utils",
         "//tensorflow/compiler/mlir/tf2xla/transforms:xla_legalize_targets",
-        "//tensorflow/compiler/xla:xla_data_proto_cc",
-        "//tensorflow/compiler/xla/mlir_hlo",
-        "//tensorflow/compiler/xla/mlir_hlo:chlo_legalize_to_hlo",
-        "//tensorflow/compiler/xla/translate/hlo_to_mhlo:attribute_importer",
         "//tensorflow/core:framework",
-        "//tensorflow/core:lib",
         "//tensorflow/core:protos_all_cc",
         "//tensorflow/core/framework:numeric_types",
         "//tensorflow/core/util/quantization:uniform_quant_ops_attr_proto_cc",
@@ -151,6 +118,10 @@ cc_library(
         "@llvm-project//mlir:SparseTensorDialect",
         "@llvm-project//mlir:Support",
         "@llvm-project//mlir:Transforms",
+        "@local_xla//xla:xla_data_proto_cc",
+        "@local_xla//xla/mlir_hlo",
+        "@local_xla//xla/mlir_hlo:chlo_legalize_to_hlo",
+        "@local_xla//xla/translate/hlo_to_mhlo:attribute_importer",
         "@stablehlo//:chlo_ops",
     ],
     # Force link to ensure ConvertTFQuantOpsToMHLOPass is registered.
@@ -165,13 +136,6 @@ tf_cc_test(
     deps = [
         ":bridge_passes",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_attributes",
-        "//tensorflow/compiler/xla:error_spec",
-        "//tensorflow/compiler/xla:literal_util",
-        "//tensorflow/compiler/xla:statusor",
-        "//tensorflow/compiler/xla/mlir_hlo",
-        "//tensorflow/compiler/xla/pjrt:pjrt_client",
-        "//tensorflow/compiler/xla/pjrt:tfrt_cpu_pjrt_client",
-        "//tensorflow/compiler/xla/tests:literal_test_util",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
@@ -179,28 +143,14 @@ tf_cc_test(
         "@llvm-project//mlir:Parser",
         "@llvm-project//mlir:Pass",
         "@llvm-project//mlir:QuantOps",
+        "@local_xla//xla:error_spec",
+        "@local_xla//xla:literal_util",
+        "@local_xla//xla:statusor",
+        "@local_xla//xla/mlir_hlo",
+        "@local_xla//xla/pjrt:pjrt_client",
+        "@local_xla//xla/pjrt:tfrt_cpu_pjrt_client",
+        "@local_xla//xla/tests:literal_test_util",
         "@stablehlo//:chlo_ops",
-    ],
-)
-
-tf_cc_test(
-    name = "convert_tf_quant_types_test",
-    srcs = ["passes/bridge/convert_tf_quant_types_test.cc"],
-    deps = [
-        ":bridge_passes",
-        "//tensorflow/compiler/mlir:register_common_dialects",
-        "//tensorflow/compiler/mlir/tensorflow",
-        "//tensorflow/compiler/mlir/tensorflow:serialize_mlir_module_utils",
-        "//tensorflow/core:test",
-        "//tensorflow/core/lib/monitoring:cell_reader",
-        "//tensorflow/tsl/platform:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//mlir:FuncDialect",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:Pass",
-        "@llvm-project//mlir:Support",
     ],
 )
 
@@ -308,13 +258,13 @@ tf_cc_binary(
         "//tensorflow/compiler/mlir/tensorflow",
         "//tensorflow/compiler/mlir/tensorflow:tensorflow_passes",
         "//tensorflow/compiler/mlir/tensorflow:tf_dialect_passes",
-        "//tensorflow/compiler/xla/mlir_hlo:hlo_dialect_registration",
         "@llvm-project//mlir:AllPassesAndDialects",
         "@llvm-project//mlir:FuncDialect",
         "@llvm-project//mlir:MlirOptLib",
         "@llvm-project//mlir:QuantOps",
         "@llvm-project//mlir:SCFDialect",
         "@llvm-project//mlir:ShapeDialect",
+        "@local_xla//xla/mlir_hlo:hlo_dialect_registration",
         "@stablehlo//:stablehlo_ops",
     ],
 )

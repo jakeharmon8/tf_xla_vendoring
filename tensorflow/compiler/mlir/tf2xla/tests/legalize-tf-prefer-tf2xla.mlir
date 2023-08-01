@@ -30,8 +30,8 @@ func.func @acos(%arg0: tensor<2xf32>) -> tensor<2xf32> {
 
 // -----
 
-// NOFALLBACK-LABEL: @xla_svd
-func.func @xla_svd(%arg0: tensor<1x1xf32>) -> (tensor<1xf32>, tensor<1x1xf32>, tensor<1x1xf32>) {
+// NOFALLBACK-LABEL: @local_xla_svd
+func.func @local_xla_svd(%arg0: tensor<1x1xf32>) -> (tensor<1xf32>, tensor<1x1xf32>, tensor<1x1xf32>) {
   // NOFALLBACK: XlaSvd
   %s, %u, %v = "tf.XlaSvd"(%arg0) {max_iter = 1, epsilon = 1.0E-09 : f32, precision_config = ""} : (tensor<1x1xf32>) -> (tensor<1xf32>, tensor<1x1xf32>, tensor<1x1xf32>)
   func.return %s, %u, %v : tensor<1xf32>, tensor<1x1xf32>, tensor<1x1xf32>

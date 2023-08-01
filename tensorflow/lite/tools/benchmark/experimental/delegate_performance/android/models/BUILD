@@ -38,7 +38,7 @@ ACCURACY_MODELS = [
     ),
 ] + accuracy_benchmark_extra_models()
 
-BASIC_LATENCY_MODELS = [
+LATENCY_MODELS = [
     (
         "mobilenet_v1_1.0_224.tflite",
         "@tflite_mobilenet_float//:mobilenet_v1_1.0_224.tflite",
@@ -47,9 +47,7 @@ BASIC_LATENCY_MODELS = [
         "mobilenet_v1_1.0_224_quant.tflite",
         "@tflite_mobilenet_quant//:mobilenet_v1_1.0_224_quant.tflite",
     ),
-]
-
-LATENCY_MODELS = BASIC_LATENCY_MODELS + latency_benchmark_extra_models()
+] + latency_benchmark_extra_models()
 
 COPY_CMD = """
   srcs=($(SRCS))
@@ -72,15 +70,6 @@ genrule(
     srcs = [target for _, target in LATENCY_MODELS],
     outs = ["assets/latency/%s" % name for name, _ in LATENCY_MODELS],
     cmd = COPY_CMD,
-)
-
-filegroup(
-    name = "latency_models_test_only",
-    testonly = True,
-    srcs = [
-        "assets/latency/mobilenet_v1_1.0_224.tflite",
-        "assets/latency/mobilenet_v1_1.0_224_quant.tflite",
-    ],
 )
 
 # Latency criteria for latency benchmarking.

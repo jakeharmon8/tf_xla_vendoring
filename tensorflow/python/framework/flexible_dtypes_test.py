@@ -831,9 +831,10 @@ class DtypesUtilTest(tf_test.TestCase, parameterized.TestCase):
   # Test Tensor shape type inference.
   def testResultTypeTensorShape(self):
     with DtypeConversionTestEnv('all'):
-      t = constant_op.constant([1, 2], dtype=dtypes.float64)
+      t = constant_op.constant(1, dtype=dtypes.float64)
       self.assertEqual(
-          flexible_dtypes.result_type(t.shape), (dtypes.int32, False)
+          flexible_dtypes.result_type(t, t.shape),
+          (dtypes.float64, False),
       )
 
   # Test string types.
@@ -842,9 +843,7 @@ class DtypesUtilTest(tf_test.TestCase, parameterized.TestCase):
       res = flexible_dtypes.result_type('foo', 'bar')
       self.assertEqual(res[0], dtypes.string)
       with self.assertRaisesRegex(
-          NotImplementedError,
-          "Implicit Conversion between <dtype: 'string'> and <dtype: 'int32'>"
-          ' is not allowed. Please convert the input manually if you need to.',
+          KeyError, 'Please convert the input manually'
       ):
         flexible_dtypes.result_type('foo', 1)
 
@@ -854,9 +853,7 @@ class DtypesUtilTest(tf_test.TestCase, parameterized.TestCase):
       res = flexible_dtypes.result_type(b'foo', b'bar')
       self.assertEqual(res[0], dtypes.string)
       with self.assertRaisesRegex(
-          NotImplementedError,
-          "Implicit Conversion between <dtype: 'string'> and <dtype: 'int32'>"
-          ' is not allowed. Please convert the input manually if you need to.',
+          KeyError, 'Please convert the input manually'
       ):
         flexible_dtypes.result_type(b'foo', 1)
 

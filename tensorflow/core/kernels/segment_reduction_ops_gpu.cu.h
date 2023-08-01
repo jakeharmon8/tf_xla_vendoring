@@ -69,8 +69,6 @@ DEFINE_REDUCE_UPDATE_OP_FOR(functor::Max, AtomicMaxOpGpu, NonAtomicMaxOpGpu)
 DEFINE_REDUCE_UPDATE_OP_FOR(functor::Min, AtomicMinOpGpu, NonAtomicMinOpGpu)
 #undef DEFINE_REDUCE_UPDATE_OP_FOR
 
-// PR#61339: MSVC does not support compound-assignment operators on device
-
 // SortedSegmentReductionFunctor kernel reduces input data just as
 // UnsortedSegmentReductionCustomKernel does except that input data
 // is partitioned along the outer reduction dimension. This is
@@ -349,7 +347,7 @@ __global__ void SegmentReduceVectorKernel(
         Treducevec block_result =
             x_ok && y_ok ? input_vec[input_idx] : Tvec(initial_value);
         // Apply weights if provided.
-        if (weights && y_ok) block_result = block_result * Tvec(weights[y_idx]);
+        if (weights && y_ok) block_result *= Tvec(weights[y_idx]);
         // Reduce along the columns of the block, returning result in first row.
         block_result = ReduceBlockAlongCols(reduce_op, block_result, x_ok);
         if (y == 0 && x_ok) {
@@ -365,10 +363,9 @@ __global__ void SegmentReduceVectorKernel(
           typename RealTypeIfComplex<Tinit>::type total_weight(end - begin);
           // Normalize the results if necessary.
           if (is_mean) {
-            result = result / Treducevec(total_weight);
+            result /= Treducevec(total_weight);
           } else if (is_sqrtn) {
-            result =
-                result / Treducevec(sqrt(static_cast<double>(total_weight)));
+            result /= Treducevec(sqrt(total_weight));
           }
         }
         // Cast from Treducevec to Tvec.
@@ -442,10 +439,10 @@ __global__ void SegmentReduceEpilogueKernel(
       // Empty segment.
       val = Treducevec(empty_segment_value);
     } else if (is_mean) {
-      val = val / Treducevec(segment_size);
+      val /= Treducevec(segment_size);
     } else if (is_sqrtn) {
-      val = val / Treducevec(sqrt(static_cast<double>(
-                      typename RealTypeIfComplex<Tinit>::type(segment_size))));
+      val /= Treducevec(
+          sqrt(typename RealTypeIfComplex<Tinit>::type(segment_size)));
     }
     // Cast from Treducevec to Tvec.
     output[seg] = static_cast<Tvec>(val);
@@ -494,7 +491,7 @@ struct LookupAndScaleAndCastInputsFunctor {
   __device__ Treducevec operator()(Tindex idx) const {
     if (indices_) idx = indices_[idx];
     Treducevec result = static_cast<Treducevec>(input_vec_[idx]);
-    if (weights_) result = result * Tvec(weights_[idx]);
+    if (weights_) result *= Tvec(weights_[idx]);
     return result;
   }
 

@@ -304,12 +304,12 @@ func.func @batch_norm_with_q_dq(%arg0: tensor<1x3x4x3xf32>) -> (tensor<1x3x2x2xf
 
 // -----
 
-func.func @xla_dot_v2(%arg0: tensor<?x2x3xf32>, %arg1: tensor<3x4x5xf32>) -> (tensor<?x2x4x5xf32>) {
+func.func @local_xla_dot_v2(%arg0: tensor<?x2x3xf32>, %arg1: tensor<3x4x5xf32>) -> (tensor<?x2x4x5xf32>) {
   %0 = "tf.XlaDotV2"(%arg0, %arg1) {device = "", dimension_numbers = "\0A\01\02\12\01\00", precision_config = ""} : (tensor<?x2x3xf32>, tensor<3x4x5xf32>) -> tensor<?x2x4x5xf32>
   func.return %0 : tensor<?x2x4x5xf32>
 }
 
-// CHECK: func @xla_dot_v2
+// CHECK: func @local_xla_dot_v2
 // CHECK-DAG: %[[cst:.*]] = "tf.Const"() {value = dense<[3, 20]> : tensor<2xi64>} : () -> tensor<2xi64>
 // CHECK-DAG: %[[cst_0:.*]] = "tf.Const"() {value = dense<[-1, 2, 4, 5]> : tensor<4xi64>} : () -> tensor<4xi64>
 // CHECK: %[[reshape:.*]] = "tf.Reshape"(%arg1, %[[cst]]) : (tensor<3x4x5xf32>, tensor<2xi64>) -> tensor<3x20xf32>
@@ -317,7 +317,7 @@ func.func @xla_dot_v2(%arg0: tensor<?x2x3xf32>, %arg1: tensor<3x4x5xf32>) -> (te
 // CHECK: %[[reshape_0:.*]] = "tf.Reshape"(%[[batch_matmul]], %[[cst_0]]) : (tensor<?x2x20xf32>, tensor<4xi64>) -> tensor<?x2x4x5xf32>
 // CHECK: return %[[reshape_0]] : tensor<?x2x4x5xf32>
 
-// XLA-CHECK: func @xla_dot_v2
+// XLA-CHECK: func @local_xla_dot_v2
 // XLA-CHECK: %[[einsum:.*]] = "tf.Einsum"(%arg0, %arg1) {equation = "abc,cde->abde"} : (tensor<?x2x3xf32>, tensor<3x4x5xf32>) -> tensor<?x2x4x5xf32>
 // XLA-CHECK: return %[[einsum]] : tensor<?x2x4x5xf32>
 
@@ -328,12 +328,12 @@ func.func @xla_dot_v2(%arg0: tensor<?x2x3xf32>, %arg1: tensor<3x4x5xf32>) -> (te
 //   collapsed_slice_dims: 1
 //   start_index_map: 1
 // }
-func.func @xla_gather(%arg0: tensor<?x2xf32>, %arg1: tensor<1xi32>, %arg2: tensor<2xi32>) -> tensor<*xf32> {
+func.func @local_xla_gather(%arg0: tensor<?x2xf32>, %arg1: tensor<1xi32>, %arg2: tensor<2xi32>) -> tensor<*xf32> {
   %0 = "tf.XlaGather"(%arg0, %arg1, %arg2) {device = "", dimension_numbers = "\0A\01\00\12\01\01\1A\01\01", indices_are_sorted = true} : (tensor<?x2xf32>, tensor<1xi32>, tensor<2xi32>) -> tensor<*xf32>
   func.return %0 : tensor<*xf32>
 }
 
-// CHECK: func @xla_gather
+// CHECK: func @local_xla_gather
 // CHECK-DAG: %[[cst:.*]] = "tf.Const"() {value = dense<0> : tensor<2xi64>} : () -> tensor<2xi64>
 // CHECK-DAG: %[[cst_0:.*]] = "tf.Const"() {value = dense<1> : tensor<1x1xi64>} : () -> tensor<1x1xi64>
 // CHECK-DAG: %[[cst_1:.*]] = "tf.Const"() {value = dense<-1> : tensor<1xi64>} : () -> tensor<1xi64>
@@ -349,7 +349,7 @@ func.func @xla_gather(%arg0: tensor<?x2xf32>, %arg1: tensor<1xi32>, %arg2: tenso
 // Tests that the converted `tf.Slice` has the correct number of dimensions
 // when the output shape is known (`tensor<i32>` instead of `tensor<*xi32>`).
 
-func.func @xla_gather_known_output_shape(%arg0: tensor<5xi32>, %arg1: tensor<1xi32>, %arg2: tensor<1xi32>) -> tensor<i32> {
+func.func @local_xla_gather_known_output_shape(%arg0: tensor<5xi32>, %arg1: tensor<1xi32>, %arg2: tensor<1xi32>) -> tensor<i32> {
   // dimension_numbers: {
   //   collapsed_slice_dims: 0
   //   start_index_map: 0
@@ -358,7 +358,7 @@ func.func @xla_gather_known_output_shape(%arg0: tensor<5xi32>, %arg1: tensor<1xi
   func.return %0 : tensor<i32>
 }
 
-// CHECK: func @xla_gather_known_output_shape
+// CHECK: func @local_xla_gather_known_output_shape
 // CHECK-DAG: %[[cst:.*]] = "tf.Const"() {value = dense<0> : tensor<1xi64>} : () -> tensor<1xi64>
 // CHECK-DAG: %[[cst_0:.*]] = "tf.Const"() {value = dense<0> : tensor<1x1xi64>} : () -> tensor<1x1xi64>
 // CHECK-DAG: %[[cst_1:.*]] = "tf.Const"() {value = dense<> : tensor<0xi64>} : () -> tensor<0xi64>

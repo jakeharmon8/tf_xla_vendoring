@@ -47,11 +47,11 @@ limitations under the License.
 #include "tensorflow/compiler/tf2xla/xla_compiler.h"
 #include "tensorflow/compiler/tf2xla/xla_helpers.h"
 #include "tensorflow/compiler/tf2xla/xla_op_registry.h"
-#include "tensorflow/compiler/xla/client/local_client.h"
-#include "tensorflow/compiler/xla/executable_run_options.h"
-#include "tensorflow/compiler/xla/pjrt/pjrt_client.h"
-#include "tensorflow/compiler/xla/service/gpu/gpu_executable_run_options.h"
-#include "tensorflow/compiler/xla/statusor.h"
+#include "xla/client/local_client.h"
+#include "xla/executable_run_options.h"
+#include "xla/pjrt/pjrt_client.h"
+#include "xla/service/gpu/gpu_executable_run_options.h"
+#include "xla/statusor.h"
 #include "tensorflow/core/framework/allocator.h"
 #include "tensorflow/core/framework/node_def_util.h"
 #include "tensorflow/core/framework/op_kernel.h"
@@ -66,7 +66,7 @@ limitations under the License.
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 #include "tensorflow/core/profiler/lib/traceme.h"
 #include "tensorflow/core/util/stream_executor_util.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tsl/platform/statusor.h"
 
 // OP_REQUIRES_OK_RETURN is the same as OP_REQUIRES_OK except that
 // in error case, it returns RET instead of void.
@@ -215,20 +215,18 @@ Status GetTaskName(const std::string_view device_name, std::string* task_name) {
 // Provide SendDeviceMemoryFunction for XLA host callbacks.  This callback
 // handles transferring from device to host.
 xla::SendDeviceMemoryFunction GetSendDeviceMemoryFunction(
-    OpKernelContext* ctx, const std::string& program_key) {
+    OpKernelContext* ctx) {
   return
-      [ctx, program_key](
-          int64_t channel_id, se::Stream* stream, const xla::Shape& shape,
-          const se::DeviceMemoryBase& device_memory_base,
-          const absl::flat_hash_map<std::string, std::string>& frontend_attrs)
+      [ctx](int64_t channel_id, se::Stream* stream, const xla::Shape& shape,
+            const se::DeviceMemoryBase& device_memory_base,
+            const absl::flat_hash_map<std::string, std::string>& frontend_attrs)
           -> StatusOr<tsl::AsyncValueRef<se::Event>> {
         auto iter = frontend_attrs.find("_xla_host_transfer_rendezvous");
 
         // Generate the Rendezvous key.
-        const std::string& rendezvous_key_base =
-            absl::StrCat(program_key, iter->second);
-
+        const std::string& rendezvous_key_base = iter->second;
         const std::string& src_device = ctx->device()->name();
+
         std::string task_prefix;
         TF_RETURN_IF_ERROR(GetTaskName(src_device, &task_prefix));
         const std::string dst_device =
@@ -264,20 +262,18 @@ xla::SendDeviceMemoryFunction GetSendDeviceMemoryFunction(
 // Provide RecvDeviceMemoryFunction for XLA host callbacks.  This callback
 // handles transferring from host to device.
 xla::RecvDeviceMemoryFunction GetRecvDeviceMemoryFunction(
-    OpKernelContext* ctx, const std::string& program_key) {
+    OpKernelContext* ctx) {
   return
-      [ctx, program_key](
-          int64_t channel_id, se::Stream* stream, const xla::Shape& shape,
-          se::DeviceMemoryBase* device_memory_base,
-          const absl::flat_hash_map<std::string, std::string>& frontend_attrs)
+      [ctx](int64_t channel_id, se::Stream* stream, const xla::Shape& shape,
+            se::DeviceMemoryBase* device_memory_base,
+            const absl::flat_hash_map<std::string, std::string>& frontend_attrs)
           -> StatusOr<tsl::AsyncValueRef<se::Event>> {
         auto iter = frontend_attrs.find("_xla_host_transfer_rendezvous");
 
         // Generate the Rendezvous key.
-        const std::string& rendezvous_key_base =
-            absl::StrCat(program_key, iter->second);
-
+        const std::string& rendezvous_key_base = iter->second;
         const std::string& dst_device = ctx->device()->name();
+
         std::string task_prefix;
         TF_RETURN_IF_ERROR(GetTaskName(dst_device, &task_prefix));
         const std::string src_device =
@@ -326,6 +322,14 @@ StatusOr<xla::ExecutionOutput> RunExecutable(
   run_options.set_allocator(allocator);
   run_options.set_intra_op_thread_pool(&ctx->eigen_cpu_device());
   run_options.set_rng_seed(GetXLARandomSeed());
+
+  // Host callbacks used for HLO send/recv.
+  xla::SendDeviceMemoryFunction send_function =
+      GetSendDeviceMemoryFunction(ctx);
+  run_options.set_send_device_memory_function(&send_function);
+  xla::RecvDeviceMemoryFunction recv_function =
+      GetRecvDeviceMemoryFunction(ctx);
+  run_options.set_recv_device_memory_function(&recv_function);
 
   StatusOr<xla::ExecutionOutput> execution_output;
   bool run_synchronous =
@@ -986,15 +990,6 @@ void XlaRunOp::Compute(OpKernelContext* ctx) {
   }
 
   xla::ExecutableRunOptions run_options;
-
-  // Host callbacks used for HLO send/recv.
-  xla::SendDeviceMemoryFunction send_function =
-      GetSendDeviceMemoryFunction(ctx, key);
-  run_options.set_send_device_memory_function(&send_function);
-  xla::RecvDeviceMemoryFunction recv_function =
-      GetRecvDeviceMemoryFunction(ctx, key);
-  run_options.set_recv_device_memory_function(&recv_function);
-
   StatusOr<xla::ExecutionOutput> execution_output = RunExecutable(
       platform_info_, launch_context, std::move(*execution_inputs), run_options,
       closure.executable(), ctx, allocator.get());

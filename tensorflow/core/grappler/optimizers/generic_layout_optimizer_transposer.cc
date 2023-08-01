@@ -97,16 +97,6 @@ bool IsNonFloatingConv2D(const utils::MutableNodeView& node) {
   return false;
 }
 
-bool IsNonFloatingConv3D(const utils::MutableNodeView& node) {
-  if (IsConv3D(*node.node())) {
-    const auto* attr = node.GetAttr(kAttrT);
-    if (attr != nullptr) {
-      return !kDataTypeIsFloating.Contains(attr->type());
-    }
-  }
-  return false;
-}
-
 // Utils for layout agnostic transposer.
 
 bool IsComparisonOp(const NodeDef& node) {
@@ -291,10 +281,8 @@ bool Transposer::ShouldProcess(const TransposeContext& context,
 
   // Only transposes floating point nodes.
   const bool is_integer_conv2d = IsNonFloatingConv2D(node);
-  const bool is_integer_conv3d = IsNonFloatingConv3D(node);
 
   return is_on_target_device && data_format_match && !is_integer_conv2d &&
-         !is_integer_conv3d &&
          !context.nodes_to_preserve.contains(node_def->name()) &&
          !(node.NumRegularFanouts() == 0 && node.NumControlledFanouts() == 0);
 }
@@ -1022,28 +1010,6 @@ Status MaxPoolV2Transposer::TransposeNode(TransposeContext* context,
   return context->graph_view->GetMutationBuilder()->Apply();
 }
 
-Status MaxPool3DTransposer::TransposeNode(TransposeContext* context,
-                                          utils::MutableNodeView* node) {
-  DCHECK(IsMaxPool3D(*node->node()));
-  // We check data_input's shape instead, because the shape inference of
-  // MaxPool3D is not able to infer the shape when ksize or strides is not
-  // constant.
-  const auto& data_fanin = node->GetRegularFanin(0);
-  auto* data_fanin_node = data_fanin.node_view();
-  if (!ShouldProcess(*context, *node) ||
-      !IsFanoutPortRankN(*data_fanin_node, data_fanin.index(), 5)) {
-    return OkStatus();
-  }
-  ScopedDataFormatUpgrader data_format_upgrader(context, 5);
-  VLOG(3) << "GenericLayoutOptimizer: transforming node '" << node->GetName()
-          << "' with op '" << node->GetOp() << "' from data format '"
-          << context->src_format << "' to '" << context->dst_format << "'";
-  TF_RETURN_IF_ERROR(UpdateNode(context, node));
-  TF_RETURN_IF_ERROR(UpdateFaninEdgesWithOp(context, {0}, node, kOpTranspose));
-  TF_RETURN_IF_ERROR(UpdateFanoutEdgesWithOp(context, {0}, node, kOpTranspose));
-  return context->graph_view->GetMutationBuilder()->Apply();
-}
-
 Status MaxPoolGradTransposer::TransposeNode(TransposeContext* context,
                                             utils::MutableNodeView* node) {
   DCHECK(IsMaxPoolGrad(*node->node()) || IsMaxPoolGradGradV1(*node->node()));
@@ -1455,8 +1421,7 @@ bool MergeTransposer::IsEveryFaninAfterDstToSrcTransform(
     const TransposeContext& context, const utils::MutableNodeView& node) const {
   for (const auto& regular_fanin : node.GetRegularFanins()) {
     auto* regular_fanin_node = regular_fanin.node_view();
-    if ((IsFanoutPortRankN(*regular_fanin_node, regular_fanin.index(), 4) ||
-         IsFanoutPortRankN(*regular_fanin_node, regular_fanin.index(), 5)) &&
+    if (IsFanoutPortRankN(*regular_fanin_node, regular_fanin.index(), 4) &&
         ((IsAfterDstToSrcTransform(context, *regular_fanin_node) &&
           IsLayoutAgnosticOp(*regular_fanin_node->node())) ||
          IsLayoutOptimizerAddedDstToSrcTranspose(context,
@@ -1471,12 +1436,7 @@ bool MergeTransposer::IsEveryFaninAfterDstToSrcTransform(
 Status MergeTransposer::TransposeNode(TransposeContext* context,
                                       utils::MutableNodeView* node) {
   DCHECK(IsMerge(*node->node()));
-  const int rank = GetFaninPortRank(*node, 0);
-  if (rank != 4 && rank != 5) {
-    return OkStatus();
-  }
-  ScopedDataFormatUpgrader data_format_upgrader(context, rank);
-  if (!ShouldProcess(*context, *node) ||
+  if (!ShouldProcess(*context, *node) || !IsFanoutPortRankN(*node, 0, 4) ||
       !IsEveryFaninAfterDstToSrcTransform(*context, *node)) {
     return OkStatus();
   }
@@ -1723,16 +1683,7 @@ Status SplitTransposer::TransposeNode(TransposeContext* context,
                                       utils::MutableNodeView* node) {
   DCHECK(IsSplit(*node->node()));
   const auto ports = GetDataFanoutPorts(*node);
-  int rank = 4;
-  if (!IsFanoutPortsRankN(*node, ports, 4)) {
-    if (!IsFanoutPortsRankN(*node, ports, 5)) {
-      return OkStatus();
-    } else {
-      rank = 5;
-    }
-  }
-  ScopedDataFormatUpgrader data_format_upgrader(context, rank);
-  if (!ShouldProcess(*context, *node) ||
+  if (!ShouldProcess(*context, *node) || !IsFanoutPortsRankN(*node, ports, 4) ||
       !IsAfterDstToSrcTransform(*context, *node)) {
     return OkStatus();
   }
@@ -1748,16 +1699,7 @@ Status SplitVTransposer::TransposeNode(TransposeContext* context,
                                        utils::MutableNodeView* node) {
   DCHECK(IsSplitV(*node->node()));
   const auto ports = GetDataFanoutPorts(*node);
-  int rank = 4;
-  if (!IsFanoutPortsRankN(*node, ports, 4)) {
-    if (!IsFanoutPortsRankN(*node, ports, 5)) {
-      return OkStatus();
-    } else {
-      rank = 5;
-    }
-  }
-  ScopedDataFormatUpgrader data_format_upgrader(context, rank);
-  if (!ShouldProcess(*context, *node) ||
+  if (!ShouldProcess(*context, *node) || !IsFanoutPortsRankN(*node, ports, 4) ||
       !IsAfterDstToSrcTransform(*context, *node)) {
     return OkStatus();
   }
@@ -1930,27 +1872,17 @@ Status StridedSliceTransposer::PermuteMask(TransposeContext* context,
 Status StridedSliceTransposer::TransposeNode(TransposeContext* context,
                                              utils::MutableNodeView* node) {
   DCHECK(IsStridedSlice(*node->node()));
-  const int rank = GetFanoutPortRank(*node, 0);
-  if (rank != 4 && rank != 5) {
-    return OkStatus();
-  }
-  ScopedDataFormatUpgrader data_format_upgrader(context, rank);
-  if (!ShouldProcess(*context, *node) || !HasOnlyBeginEndMask(*node) ||
-      !IsAfterDstToSrcTransform(*context, *node) ||
-      (!IsFaninPortsDimsNIfConst(*node, {1, 2, 3}, {4}) &&
-       !IsFaninPortsDimsNIfConst(*node, {1, 2, 3, 4}, {5}))) {
+  if (!ShouldProcess(*context, *node) || !IsFanoutPortRankN(*node, 0, 4) ||
+      !IsFaninPortsDimsNIfConst(*node, {1, 2, 3}, {4}) ||
+      !HasOnlyBeginEndMask(*node) ||
+      !IsAfterDstToSrcTransform(*context, *node)) {
     return OkStatus();
   }
   TF_RETURN_IF_ERROR(UpdateFaninEdgesWithOp(context, {0}, node, kOpTranspose));
   TF_RETURN_IF_ERROR(PermuteMask(context, node, "begin_mask"));
   TF_RETURN_IF_ERROR(PermuteMask(context, node, "end_mask"));
-  if (rank == 4) {
-    TF_RETURN_IF_ERROR(UpdateFaninEdgesWithOp(context, {1, 2, 3}, node,
-                                              kOpDataFormatVecPermute));
-  } else if (rank == 5) {
-    TF_RETURN_IF_ERROR(UpdateFaninEdgesWithOp(context, {1, 2, 3, 4}, node,
-                                              kOpDataFormatVecPermute));
-  }
+  TF_RETURN_IF_ERROR(UpdateFaninEdgesWithOp(context, {1, 2, 3}, node,
+                                            kOpDataFormatVecPermute));
   TF_RETURN_IF_ERROR(UpdateFanoutEdgesWithOp(context, {0}, node, kOpTranspose));
   return context->graph_view->GetMutationBuilder()->Apply();
 }
@@ -1958,12 +1890,7 @@ Status StridedSliceTransposer::TransposeNode(TransposeContext* context,
 Status SwitchTransposer::TransposeNode(TransposeContext* context,
                                        utils::MutableNodeView* node) {
   DCHECK(IsSwitch(*node->node()));
-  const int rank = GetFaninPortRank(*node, 0);
-  if (rank != 4 && rank != 5) {
-    return OkStatus();
-  }
-  ScopedDataFormatUpgrader data_format_upgrader(context, rank);
-  if (!ShouldProcess(*context, *node) ||
+  if (!ShouldProcess(*context, *node) || !IsFaninPortRankN(*node, 0, 4) ||
       !IsAfterDstToSrcTransform(*context, *node)) {
     return OkStatus();
   }
@@ -1976,12 +1903,7 @@ Status SwitchTransposer::TransposeNode(TransposeContext* context,
 Status TernaryOpTransposer::TransposeNode(TransposeContext* context,
                                           utils::MutableNodeView* node) {
   DCHECK(IsTernaryOp(*node->node()));
-  const int rank = GetFanoutPortRank(*node, 0);
-  if (rank != 4 && rank != 5) {
-    return OkStatus();
-  }
-  ScopedDataFormatUpgrader data_format_upgrader(context, rank);
-  if (!ShouldProcess(*context, *node) ||
+  if (!ShouldProcess(*context, *node) || !IsFanoutPortRankN(*node, 0, 4) ||
       !IsAfterDstToSrcTransform(*context, *node)) {
     return OkStatus();
   }
@@ -2051,7 +1973,7 @@ bool IsLayoutSensitiveOp(const NodeDef& node) {
          IsMaxPoolV2(node) || IsMaxPoolGrad(node) || IsMaxPoolGradV2(node) ||
          IsMaxPoolGradGradV1(node) || IsMaxPoolGradGradV2(node) ||
          IsConv3D(node) || IsConv3DBackpropInputV2(node) ||
-         IsConv3DBackpropFilterV2(node) || IsMaxPool3D(node);
+         IsConv3DBackpropFilterV2(node);
 }
 
 bool IsDefaultLayoutAgnosticOp(const NodeDef& node) {
@@ -2149,10 +2071,6 @@ bool IsUnaryGrad(const NodeDef& node) {
 }
 
 bool IsMaxPoolV2(const NodeDef& node) { return node.op() == "MaxPoolV2"; }
-
-bool IsMaxPool3D(const NodeDef& node) { return node.op() == "MaxPool3D"; }
-
-// TODO(intel-tf): Add support for MaxPoolGrad3D
 
 bool IsMaxPoolGradV2(const NodeDef& node) {
   return node.op() == "MaxPoolGradV2";

@@ -21,6 +21,7 @@ from tensorflow.python.keras.utils.generic_utils import serialize_keras_object
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn
 from tensorflow.python.util import dispatch
+from tensorflow.python.util.tf_export import keras_export
 
 # b/123041942
 # In TF 2.x, if the `tf.nn.softmax` is used as an activation function in Keras
@@ -35,6 +36,7 @@ _TF_ACTIVATIONS_V2 = {
 }
 
 
+@keras_export('keras.activations.softmax')
 @dispatch.add_dispatch_support
 def softmax(x, axis=-1):
   """Softmax converts a vector of values to a probability distribution.
@@ -91,6 +93,7 @@ def softmax(x, axis=-1):
   return output
 
 
+@keras_export('keras.activations.elu')
 @dispatch.add_dispatch_support
 def elu(x, alpha=1.0):
   """Exponential Linear Unit.
@@ -140,6 +143,7 @@ def elu(x, alpha=1.0):
   return backend.elu(x, alpha)
 
 
+@keras_export('keras.activations.selu')
 @dispatch.add_dispatch_support
 def selu(x):
   """Scaled Exponential Linear Unit (SELU).
@@ -193,6 +197,7 @@ def selu(x):
   return nn.selu(x)
 
 
+@keras_export('keras.activations.softplus')
 @dispatch.add_dispatch_support
 def softplus(x):
   """Softplus activation function, `softplus(x) = log(exp(x) + 1)`.
@@ -214,6 +219,7 @@ def softplus(x):
   return math_ops.softplus(x)
 
 
+@keras_export('keras.activations.softsign')
 @dispatch.add_dispatch_support
 def softsign(x):
   """Softsign activation function, `softsign(x) = x / (abs(x) + 1)`.
@@ -234,6 +240,7 @@ def softsign(x):
   return nn.softsign(x)
 
 
+@keras_export('keras.activations.swish')
 @dispatch.add_dispatch_support
 def swish(x):
   """Swish activation function, `swish(x) = x * sigmoid(x)`.
@@ -264,6 +271,7 @@ def swish(x):
   return nn.swish(x)
 
 
+@keras_export('keras.activations.relu')
 @dispatch.add_dispatch_support
 def relu(x, alpha=0., max_value=None, threshold=0):
   """Applies the rectified linear unit activation function.
@@ -304,6 +312,7 @@ def relu(x, alpha=0., max_value=None, threshold=0):
   return backend.relu(x, alpha=alpha, max_value=max_value, threshold=threshold)
 
 
+@keras_export('keras.activations.gelu', v1=[])
 @dispatch.add_dispatch_support
 def gelu(x, approximate=False):
   """Applies the Gaussian error linear unit (GELU) activation function.
@@ -343,6 +352,7 @@ def gelu(x, approximate=False):
   return nn.gelu(x, approximate)
 
 
+@keras_export('keras.activations.tanh')
 @dispatch.add_dispatch_support
 def tanh(x):
   """Hyperbolic tangent activation function.
@@ -364,6 +374,7 @@ def tanh(x):
   return nn.tanh(x)
 
 
+@keras_export('keras.activations.sigmoid')
 @dispatch.add_dispatch_support
 def sigmoid(x):
   """Sigmoid activation function, `sigmoid(x) = 1 / (1 + exp(-x))`.
@@ -396,6 +407,7 @@ def sigmoid(x):
   return output
 
 
+@keras_export('keras.activations.exponential')
 @dispatch.add_dispatch_support
 def exponential(x):
   """Exponential activation function.
@@ -416,6 +428,7 @@ def exponential(x):
   return math_ops.exp(x)
 
 
+@keras_export('keras.activations.hard_sigmoid')
 @dispatch.add_dispatch_support
 def hard_sigmoid(x):
   """Hard sigmoid activation function.
@@ -444,6 +457,7 @@ def hard_sigmoid(x):
   return backend.hard_sigmoid(x)
 
 
+@keras_export('keras.activations.linear')
 @dispatch.add_dispatch_support
 def linear(x):
   """Linear activation function (pass-through).
@@ -464,6 +478,7 @@ def linear(x):
   return x
 
 
+@keras_export('keras.activations.serialize')
 @dispatch.add_dispatch_support
 def serialize(activation):
   """Returns the string identifier of an activation function.
@@ -502,6 +517,7 @@ relu6 = nn.relu6
 silu = nn.swish
 
 
+@keras_export('keras.activations.deserialize')
 @dispatch.add_dispatch_support
 def deserialize(name, custom_objects=None):
   """Returns activation function given a string identifier.
@@ -544,6 +560,7 @@ def deserialize(name, custom_objects=None):
       printable_module_name='activation function')
 
 
+@keras_export('keras.activations.get')
 @dispatch.add_dispatch_support
 def get(identifier):
   """Returns function.

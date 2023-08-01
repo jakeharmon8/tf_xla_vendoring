@@ -22,12 +22,12 @@ limitations under the License.
 #include <gtest/gtest.h>
 #include "tensorflow/compiler/mlir/tf2xla/api/v1/device_type.pb.h"
 #include "tensorflow/compiler/tf2xla/xla_helpers.h"
-#include "tensorflow/compiler/xla/client/client_library.h"
+#include "xla/client/client_library.h"
 #include "tensorflow/core/lib/monitoring/cell_reader.h"
 #include "tensorflow/core/protobuf/tpu/compile_metadata.pb.h"
 #include "tensorflow/core/tpu/kernels/tpu_compile_op_support.h"
-#include "tensorflow/tsl/lib/monitoring/test_utils.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tsl/lib/monitoring/test_utils.h"
+#include "tsl/platform/statusor.h"
 
 namespace tensorflow {
 namespace tf2xla {

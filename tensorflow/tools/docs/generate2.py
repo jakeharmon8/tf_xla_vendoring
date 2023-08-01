@@ -44,7 +44,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.util import tf_export
 from tensorflow.python.util import tf_inspect
 
-if version.parse(tf.__version__) >= version.parse("2.14-dev"):
+if version.parse(tf.__version__) >= version.parse("2.14"):
   from tensorflow.python.util.pywrap_xla_ops import get_gpu_kernel_names  # pylint: disable=g-import-not-at-top
 
 # Caution: the google and oss versions of this import are different.
@@ -118,7 +118,7 @@ class RawOpsPageInfo(module_page.ModulePageInfo):
     # Skip the ModulePage implementation, which doesn't use a template.
     content = base_page.PageInfo.build(self)
 
-    if version.parse(tf.__version__) >= version.parse("2.14-dev"):
+    if version.parse(tf.__version__) >= version.parse("2.14"):
       raw_ops_doc = self.generate_raw_ops_doc_ge_214()
     else:
       raw_ops_doc = self.generate_raw_ops_doc_lt_214()

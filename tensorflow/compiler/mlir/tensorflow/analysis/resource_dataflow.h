@@ -55,12 +55,11 @@ struct ResourceConstructingOps {
 };
 
 class ResourceDataflowAnalysis
-    : public dataflow::SparseForwardDataFlowAnalysis<
+    : public dataflow::SparseDataFlowAnalysis<
           dataflow::Lattice<ResourceConstructingOps>> {
  public:
   using StateT = dataflow::Lattice<ResourceConstructingOps>;
-  using dataflow::SparseForwardDataFlowAnalysis<
-      StateT>::SparseForwardDataFlowAnalysis;
+  using dataflow::SparseDataFlowAnalysis<StateT>::SparseDataFlowAnalysis;
   ~ResourceDataflowAnalysis() override = default;
 
   void visitOperation(Operation *op, ArrayRef<const StateT *> operands,

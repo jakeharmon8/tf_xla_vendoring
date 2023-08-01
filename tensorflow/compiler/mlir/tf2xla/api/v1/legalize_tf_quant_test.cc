@@ -19,11 +19,13 @@ limitations under the License.
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include "tensorflow/compiler/mlir/tf2xla/api/v0/compile_mlir_util.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tsl/platform/statusor.h"
 
 namespace tensorflow {
 namespace tf2xla {
 namespace v1 {
+
+using testing::HasSubstr;
 
 TEST(LegalizeTFQuantTest, LegalizesModuleWithTFUniformQuantization) {
   constexpr char legalization[] = R"(

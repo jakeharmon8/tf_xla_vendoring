@@ -21,6 +21,7 @@ from tensorflow.python.keras import backend
 from tensorflow.python.keras.utils.generic_utils import deserialize_keras_object
 from tensorflow.python.keras.utils.generic_utils import serialize_keras_object
 from tensorflow.python.ops import math_ops
+from tensorflow.python.util.tf_export import keras_export
 
 
 def _check_penalty_number(x):
@@ -40,6 +41,7 @@ def _none_to_default(inputs, default):
   return default if inputs is None else default
 
 
+@keras_export('keras.regularizers.Regularizer')
 class Regularizer(object):
   """Regularizer base class.
 
@@ -204,6 +206,7 @@ class Regularizer(object):
     raise NotImplementedError(str(self) + ' does not implement get_config()')
 
 
+@keras_export('keras.regularizers.L1L2')
 class L1L2(Regularizer):
   """A regularizer that applies both L1 and L2 regularization penalties.
 
@@ -248,6 +251,7 @@ class L1L2(Regularizer):
     return {'l1': float(self.l1), 'l2': float(self.l2)}
 
 
+@keras_export('keras.regularizers.L1', 'keras.regularizers.l1')
 class L1(Regularizer):
   """A regularizer that applies a L1 regularization penalty.
 
@@ -281,6 +285,7 @@ class L1(Regularizer):
     return {'l1': float(self.l1)}
 
 
+@keras_export('keras.regularizers.L2', 'keras.regularizers.l2')
 class L2(Regularizer):
   """A regularizer that applies a L2 regularization penalty.
 
@@ -314,6 +319,7 @@ class L2(Regularizer):
     return {'l2': float(self.l2)}
 
 
+@keras_export('keras.regularizers.l1_l2')
 def l1_l2(l1=0.01, l2=0.01):  # pylint: disable=redefined-outer-name
   r"""Create a regularizer that applies both L1 and L2 penalties.
 
@@ -338,10 +344,12 @@ l1 = L1
 l2 = L2
 
 
+@keras_export('keras.regularizers.serialize')
 def serialize(regularizer):
   return serialize_keras_object(regularizer)
 
 
+@keras_export('keras.regularizers.deserialize')
 def deserialize(config, custom_objects=None):
   if config == 'l1_l2':
     # Special case necessary since the defaults used for "l1_l2" (string)
@@ -354,6 +362,7 @@ def deserialize(config, custom_objects=None):
       printable_module_name='regularizer')
 
 
+@keras_export('keras.regularizers.get')
 def get(identifier):
   """Retrieve a regularizer instance from a config or identifier."""
   if identifier is None:

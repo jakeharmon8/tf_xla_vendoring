@@ -21,12 +21,12 @@ limitations under the License.
 #include <vector>
 
 #include "fuzztest/fuzztest.h"
-#include "tensorflow/compiler/xla/literal.h"
-#include "tensorflow/compiler/xla/shape_util.h"
-#include "tensorflow/compiler/xla/text_literal_reader.h"
-#include "tensorflow/compiler/xla/types.h"
-#include "tensorflow/compiler/xla/xla_data.pb.h"
-#include "tensorflow/tsl/platform/env.h"
+#include "xla/literal.h"
+#include "xla/shape_util.h"
+#include "xla/text_literal_reader.h"
+#include "xla/types.h"
+#include "xla/xla_data.pb.h"
+#include "tsl/platform/env.h"
 
 namespace xla {
 namespace {

@@ -25,12 +25,11 @@ limitations under the License.
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/time/time.h"
 #include "tensorflow/core/framework/metrics.h"
-#include "tensorflow/tsl/platform/mutex.h"
-#include "tensorflow/tsl/platform/thread_annotations.h"
+#include "tsl/platform/mutex.h"
+#include "tsl/platform/thread_annotations.h"
 
 namespace tensorflow {
 namespace data {
@@ -127,7 +126,7 @@ std::optional<int64_t> AutoScaler::GetOptimalNumberOfWorkers() const
   int64_t optimal_number_of_workers =
       ceil(consumption_rates_sum_ / average_worker_throughput);
 
-  return std::max(int64_t{1}, optimal_number_of_workers);
+  return std::max(static_cast<int64_t>(1), optimal_number_of_workers);
 }
 
 tsl::Status AutoScaler::ReportProcessingTime(const std::string& worker_address,
@@ -187,11 +186,14 @@ tsl::Status AutoScaler::RemoveConsumer(int64_t consumer_id)
   return tsl::OkStatus();
 }
 
-void MultipleIterationsAutoScaler::EnsureIterationIsRegistered(
-    int64_t iteration_id) TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
-  if (!auto_scalers_.contains(iteration_id)) {
-    auto_scalers_[iteration_id] = std::make_unique<AutoScaler>();
-  }
+tsl::Status MultipleIterationsAutoScaler::RegisterIteration(
+    int64_t iteration_id) TF_LOCKS_EXCLUDED(mu_) {
+  tsl::mutex_lock l(mu_);
+  if (auto_scalers_.contains(iteration_id))
+    return absl::AlreadyExistsError(absl::StrCat(
+        "AutoScaler for iteration_id ", iteration_id, " already exists"));
+  auto_scalers_[iteration_id] = std::make_unique<AutoScaler>();
+  return tsl::OkStatus();
 }
 
 tsl::Status MultipleIterationsAutoScaler::UnregisterIteration(
@@ -204,12 +206,8 @@ tsl::Status MultipleIterationsAutoScaler::UnregisterIteration(
   return tsl::OkStatus();
 }
 
-tsl::Status MultipleIterationsAutoScaler::UpdateOptimalNumberOfWorkersMetric(
-    int64_t current_number_of_workers) TF_LOCKS_EXCLUDED(mu_) {
-  if (current_number_of_workers <= 0)
-    return absl::InvalidArgumentError(
-        "The current number of workers must be positive");
-
+tsl::Status MultipleIterationsAutoScaler::UpdateOptimalNumberOfWorkersMetric()
+    TF_LOCKS_EXCLUDED(mu_) {
   std::optional<int64_t> optimal_number_of_workers =
       GetOptimalNumberOfWorkers();
   if (!optimal_number_of_workers)
@@ -218,26 +216,11 @@ tsl::Status MultipleIterationsAutoScaler::UpdateOptimalNumberOfWorkersMetric(
         "no reported processing and target processing times for at least one "
         "iteration");
 
-  VLOG(3) << "Estimated optimal number of workers: "
-          << optimal_number_of_workers.value();
-
-  // Limit the estimate to wait for target processing times to converge to a
-  // feasible value. First, start increasing exponentially by 4x. Once
-  // increases are greater than 500, scale linearly.
-  int64_t bound_optimal_number_of_workers = optimal_number_of_workers.value();
-  if (bound_optimal_number_of_workers > current_number_of_workers * 4 ||
-      bound_optimal_number_of_workers > current_number_of_workers + 500) {
-    bound_optimal_number_of_workers = std::min(current_number_of_workers * 4,
-                                               current_number_of_workers + 500);
-  }
-  // Limit the estimate to at most 100k workers.
-  bound_optimal_number_of_workers =
-      std::min(bound_optimal_number_of_workers, int64_t{100000});
-  VLOG(3) << "Bound optimal number of workers: "
-          << bound_optimal_number_of_workers;
-
+  constexpr float FIVE_MINUTES = 60.0 * 5.0;
+  LOG_EVERY_N_SEC(INFO, FIVE_MINUTES) << "Estimated optimal number of workers: "
+                                      << optimal_number_of_workers.value();
   metrics::RecordTFDataServiceOptimalNumberOfWorkers(
-      bound_optimal_number_of_workers);
+      optimal_number_of_workers.value());
 
   return tsl::OkStatus();
 }
@@ -266,8 +249,10 @@ std::optional<int64_t> MultipleIterationsAutoScaler::GetOptimalNumberOfWorkers()
 tsl::Status MultipleIterationsAutoScaler::ReportProcessingTime(
     int64_t iteration_id, const std::string& worker_address,
     absl::Duration processing_time) TF_LOCKS_EXCLUDED(mu_) {
-  tsl::mutex_lock l(mu_);
-  EnsureIterationIsRegistered(iteration_id);
+  tsl::tf_shared_lock l(mu_);
+  if (!auto_scalers_.contains(iteration_id))
+    return absl::NotFoundError(absl::StrCat(
+        "Could not find AutoScaler for iteration_id ", iteration_id));
 
   tsl::Status status = auto_scalers_[iteration_id]->ReportProcessingTime(
       worker_address, processing_time);
@@ -277,8 +262,10 @@ tsl::Status MultipleIterationsAutoScaler::ReportProcessingTime(
 tsl::Status MultipleIterationsAutoScaler::ReportTargetProcessingTime(
     int64_t iteration_id, int64_t consumer_id,
     absl::Duration target_processing_time) TF_LOCKS_EXCLUDED(mu_) {
-  tsl::mutex_lock l(mu_);
-  EnsureIterationIsRegistered(iteration_id);
+  tsl::tf_shared_lock l(mu_);
+  if (!auto_scalers_.contains(iteration_id))
+    return absl::NotFoundError(absl::StrCat(
+        "Could not find AutoScaler for iteration_id ", iteration_id));
 
   tsl::Status status = auto_scalers_[iteration_id]->ReportTargetProcessingTime(
       consumer_id, target_processing_time);
@@ -291,7 +278,7 @@ tsl::Status MultipleIterationsAutoScaler::RemoveWorker(
   tsl::tf_shared_lock l(mu_);
   if (!auto_scalers_.contains(iteration_id))
     return absl::NotFoundError(absl::StrCat(
-        "There are no reported times for iteration_id ", iteration_id));
+        "Could not find AutoScaler for iteration_id ", iteration_id));
 
   tsl::Status status =
       auto_scalers_[iteration_id]->RemoveWorker(worker_address);
@@ -304,7 +291,7 @@ tsl::Status MultipleIterationsAutoScaler::RemoveConsumer(int64_t iteration_id,
   tsl::tf_shared_lock l(mu_);
   if (!auto_scalers_.contains(iteration_id))
     return absl::NotFoundError(absl::StrCat(
-        "There are no reported times for iteration_id ", iteration_id));
+        "Could not find AutoScaler for iteration_id ", iteration_id));
 
   tsl::Status status = auto_scalers_[iteration_id]->RemoveConsumer(consumer_id);
   return status;

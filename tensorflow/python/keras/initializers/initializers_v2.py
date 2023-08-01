@@ -26,11 +26,13 @@ from tensorflow.python.ops import linalg_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import stateless_random_ops
+from tensorflow.python.util.tf_export import keras_export
 
 _PARTITION_SHAPE = 'partition_shape'
 _PARTITION_OFFSET = 'partition_offset'
 
 
+@keras_export('keras.initializers.Initializer')
 class Initializer(object):
   """Initializer base class: all Keras initializers inherit from this class.
 
@@ -112,6 +114,7 @@ class Initializer(object):
     return cls(**config)
 
 
+@keras_export('keras.initializers.Zeros', 'keras.initializers.zeros', v1=[])
 class Zeros(Initializer):
   """Initializer that generates tensors initialized to 0.
 
@@ -148,6 +151,7 @@ class Zeros(Initializer):
     return array_ops.zeros(shape, dtype)
 
 
+@keras_export('keras.initializers.Ones', 'keras.initializers.ones', v1=[])
 class Ones(Initializer):
   """Initializer that generates tensors initialized to 1.
 
@@ -184,6 +188,9 @@ class Ones(Initializer):
     return array_ops.ones(shape, dtype)
 
 
+@keras_export('keras.initializers.Constant',
+              'keras.initializers.constant',
+              v1=[])
 class Constant(Initializer):
   """Initializer that generates tensors with constant values.
 
@@ -229,6 +236,9 @@ class Constant(Initializer):
     return {'value': self.value}
 
 
+@keras_export('keras.initializers.RandomUniform',
+              'keras.initializers.random_uniform',
+              v1=[])
 class RandomUniform(Initializer):
   """Initializer that generates tensors with a uniform distribution.
 
@@ -289,6 +299,9 @@ class RandomUniform(Initializer):
     }
 
 
+@keras_export('keras.initializers.RandomNormal',
+              'keras.initializers.random_normal',
+              v1=[])
 class RandomNormal(Initializer):
   """Initializer that generates tensors with a normal distribution.
 
@@ -346,6 +359,9 @@ class RandomNormal(Initializer):
     }
 
 
+@keras_export('keras.initializers.TruncatedNormal',
+              'keras.initializers.truncated_normal',
+              v1=[])
 class TruncatedNormal(Initializer):
   """Initializer that generates a truncated normal distribution.
 
@@ -408,6 +424,9 @@ class TruncatedNormal(Initializer):
     }
 
 
+@keras_export('keras.initializers.VarianceScaling',
+              'keras.initializers.variance_scaling',
+              v1=[])
 class VarianceScaling(Initializer):
   """Initializer capable of adapting its scale to the shape of weights tensors.
 
@@ -512,6 +531,9 @@ class VarianceScaling(Initializer):
     }
 
 
+@keras_export('keras.initializers.Orthogonal',
+              'keras.initializers.orthogonal',
+              v1=[])
 class Orthogonal(Initializer):
   """Initializer that generates an orthogonal matrix.
 
@@ -593,6 +615,9 @@ class Orthogonal(Initializer):
     return {'gain': self.gain, 'seed': self.seed}
 
 
+@keras_export('keras.initializers.Identity',
+              'keras.initializers.identity',
+              v1=[])
 class Identity(Initializer):
   """Initializer that generates the identity matrix.
 
@@ -640,6 +665,9 @@ class Identity(Initializer):
     return {'gain': self.gain}
 
 
+@keras_export('keras.initializers.GlorotUniform',
+              'keras.initializers.glorot_uniform',
+              v1=[])
 class GlorotUniform(VarianceScaling):
   """The Glorot uniform initializer, also called Xavier uniform initializer.
 
@@ -680,6 +708,9 @@ class GlorotUniform(VarianceScaling):
     return {'seed': self.seed}
 
 
+@keras_export('keras.initializers.GlorotNormal',
+              'keras.initializers.glorot_normal',
+              v1=[])
 class GlorotNormal(VarianceScaling):
   """The Glorot normal initializer, also called Xavier normal initializer.
 
@@ -721,6 +752,9 @@ class GlorotNormal(VarianceScaling):
     return {'seed': self.seed}
 
 
+@keras_export('keras.initializers.LecunNormal',
+              'keras.initializers.lecun_normal',
+              v1=[])
 class LecunNormal(VarianceScaling):
   """Lecun normal initializer.
 
@@ -766,6 +800,9 @@ class LecunNormal(VarianceScaling):
     return {'seed': self.seed}
 
 
+@keras_export('keras.initializers.LecunUniform',
+              'keras.initializers.lecun_uniform',
+              v1=[])
 class LecunUniform(VarianceScaling):
   """Lecun uniform initializer.
 
@@ -806,6 +843,9 @@ class LecunUniform(VarianceScaling):
     return {'seed': self.seed}
 
 
+@keras_export('keras.initializers.HeNormal',
+              'keras.initializers.he_normal',
+              v1=[])
 class HeNormal(VarianceScaling):
   """He normal initializer.
 
@@ -843,6 +883,9 @@ class HeNormal(VarianceScaling):
     return {'seed': self.seed}
 
 
+@keras_export('keras.initializers.HeUniform',
+              'keras.initializers.he_uniform',
+              v1=[])
 class HeUniform(VarianceScaling):
   """He uniform variance scaling initializer.
 

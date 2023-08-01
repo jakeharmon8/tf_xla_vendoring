@@ -64,7 +64,7 @@ TfLiteRegistration* GetDummy2Registration() {
   return &registration;
 }
 
-TEST(MutableOpResolverTest, FindOp) {
+TEST(MutableOpResolverTest, FinOp) {
   MutableOpResolver resolver;
   resolver.AddBuiltin(BuiltinOperator_ADD, GetDummyRegistration());
 

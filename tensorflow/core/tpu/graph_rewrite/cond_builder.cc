@@ -15,7 +15,7 @@ limitations under the License.
 
 #include "tensorflow/core/tpu/graph_rewrite/cond_builder.h"
 
-#include "tensorflow/compiler/xla/status_macros.h"
+#include "xla/status_macros.h"
 #include "tensorflow/core/common_runtime/function.h"
 #include "tensorflow/core/framework/node_def_builder.h"
 #include "tensorflow/core/tpu/graph_rewrite/incomplete_nodedef_builder.h"

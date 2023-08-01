@@ -52,7 +52,6 @@ cc_library(
         "//tensorflow/core/platform:thread_annotations",
         "//tensorflow/core/profiler/lib:traceme",
         "//tensorflow/core/profiler/lib:traceme_encode",
-        "//tensorflow/tsl/platform:platform_port",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -95,10 +94,10 @@ cc_library(
         "//tensorflow/core/data/service:grpc_util",
         "//tensorflow/core/platform:env_time",
         "//tensorflow/core/platform:statusor",
-        "//tensorflow/tsl/platform:errors",
-        "//tensorflow/tsl/protobuf:protos_all_cc",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
+        "@local_tsl//tsl/platform:errors",
+        "@local_tsl//tsl/protobuf:protos_all_cc",
     ],
 )
 
@@ -115,10 +114,10 @@ tf_cc_test(
         "//tensorflow/core/data/service:dispatcher_client",
         "//tensorflow/core/data/service:test_cluster",
         "//tensorflow/core/data/service:test_util",
-        "//tensorflow/tsl/lib/core:status_test_util",
-        "//tensorflow/tsl/platform:errors",
-        "//tensorflow/tsl/platform:status_matchers",
-        "//tensorflow/tsl/protobuf:protos_all_cc",
+        "@local_tsl//tsl/lib/core:status_test_util",
+        "@local_tsl//tsl/platform:errors",
+        "@local_tsl//tsl/platform:status_matchers",
+        "@local_tsl//tsl/protobuf:protos_all_cc",
     ] + tf_grpc_cc_dependencies() + tf_protos_profiler_service(),
 )
 

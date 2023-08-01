@@ -14,20 +14,24 @@ limitations under the License.
 ==============================================================================*/
 #include "tensorflow/core/tpu/kernels/tpu_compilation_cache_external.h"
 
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_ops_c_api.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+#include "xla/service/hlo.pb.h"
+#include "xla/stream_executor/tpu/tpu_ops_c_api.h"
+#include "tensorflow/core/lib/gtl/cleanup.h"
 #include "tensorflow/core/platform/random.h"
 #include "tensorflow/core/profiler/lib/traceme.h"
 #include "tensorflow/core/tpu/kernels/compiled_subgraph.h"
-#include "tensorflow/core/tpu/kernels/tpu_compilation_cache_key.h"
-#include "tensorflow/core/tpu/kernels/tpu_program_group.h"
+#include "tensorflow/core/tpu/kernels/tpu_compilation_cache_entry.h"
+#include "tensorflow/core/tpu/kernels/tpu_compilation_metrics.h"
+#include "tensorflow/core/tpu/kernels/tpu_compile_op_support.h"
 #include "tensorflow/core/tpu/kernels/tpu_util.h"
+#include "tensorflow/core/tpu/kernels/trace_util.h"
 
 namespace tensorflow {
 namespace tpu {

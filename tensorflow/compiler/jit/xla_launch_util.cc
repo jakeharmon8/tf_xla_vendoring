@@ -32,12 +32,12 @@ limitations under the License.
 #include "tensorflow/compiler/tf2xla/const_analysis.h"
 #include "tensorflow/compiler/tf2xla/shape_util.h"
 #include "tensorflow/compiler/tf2xla/xla_compiler.h"
-#include "tensorflow/compiler/xla/client/local_client.h"
-#include "tensorflow/compiler/xla/pjrt/pjrt_future.h"
-#include "tensorflow/compiler/xla/pjrt/pjrt_stream_executor_client.h"
-#include "tensorflow/compiler/xla/pjrt/tracked_device_buffer.h"
-#include "tensorflow/compiler/xla/shape_util.h"
-#include "tensorflow/compiler/xla/status_macros.h"
+#include "xla/client/local_client.h"
+#include "xla/pjrt/pjrt_future.h"
+#include "xla/pjrt/pjrt_stream_executor_client.h"
+#include "xla/pjrt/tracked_device_buffer.h"
+#include "xla/shape_util.h"
+#include "xla/status_macros.h"
 #include "tensorflow/core/common_runtime/dma_helper.h"
 #include "tensorflow/core/common_runtime/gpu_device_context.h"
 #include "tensorflow/core/framework/allocator.h"
@@ -51,9 +51,9 @@ limitations under the License.
 #include "tensorflow/core/platform/errors.h"
 #include "tensorflow/core/tfrt/common/async_value_tensor.h"
 #include "tensorflow/core/util/stream_executor_util.h"
-#include "tensorflow/tsl/framework/device_id_utils.h"
-#include "tensorflow/tsl/platform/status.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tsl/framework/device_id_utils.h"
+#include "tsl/platform/status.h"
+#include "tsl/platform/statusor.h"
 
 namespace tensorflow {
 namespace {
@@ -706,25 +706,11 @@ Status PopulateCtxOutputsFromPjRtExecutableOutputs(
           << "Invalid input for outputs " << i << ": " << input_index;
       ctx->set_output(i, *inputs[input_index]);
     } else {
-      xla::PjRtBuffer* output_buffer = executable_outputs[output_num].get();
-      if (output_buffer->IsTuple()) {
-        return absl::InvalidArgumentError(
-            "Tuple PJRT buffer output is not supported.");
-      }
-      absl::Span<const int64_t> dims;
-      std::optional<std::vector<int64_t>> logical_dims_storage;
-      if (output_buffer->has_dynamic_dimensions()) {
-        TF_ASSIGN_OR_RETURN(std::vector<int64_t> logical_dims,
-                            output_buffer->logical_dimensions());
-        logical_dims_storage.emplace(std::move(logical_dims));
-        dims = *logical_dims_storage;
-      } else {
-        dims = output_buffer->dimensions();
-      }
+      TF_ASSIGN_OR_RETURN(
+          xla::Shape device_shape,
+          executable_outputs[output_num]->logical_on_device_shape());
       TensorShape tensor_shape;
-      for (int i = 0; i < dims.size(); ++i) {
-        TF_RETURN_IF_ERROR(tensor_shape.AddDimWithStatus(dims[i]));
-      }
+      TF_RETURN_IF_ERROR(XLAShapeToTensorShape(device_shape, &tensor_shape));
       if (use_pjrt_tensor_buffer) {
         Tensor output_tensor = MakeTensorFromPjRtStreamExecutorBuffer(
             type, tensor_shape, std::move(executable_outputs[output_num]));
@@ -784,21 +770,10 @@ Status PopulateCtxOutputsFromPjRtExecutableOutputs(
 }
 
 xla::ExecuteOptions GetPjRtExecuteOptions(
-    const DeviceType& device_type,
     absl::flat_hash_set<int> non_donatable_input_indices) {
   xla::ExecuteOptions options;
   options.arguments_are_tupled = false;
   options.untuple_result = true;
-  // Hardcode run id to always be one: TF distributed strategy
-  // differentiates between subsequent runs using dependency edges. This
-  // is safe, as only TF dist-strat can produce distributed ops, and we
-  // can rely on TF dist-strat invariants.
-  options.launch_id = 1;
-  // TODO(b/293186653): investigate we should turn on strict shape checking for
-  // GPU.
-  if (device_type == DEVICE_GPU) {
-    options.strict_shape_checking = false;
-  }
   // Note: TF does not use PJRT host callbacks as of today. Setting this option
   // to true to workaround an ExecuteOptions check: [1].
   //
@@ -847,10 +822,9 @@ Status RunPjRtExecutable(
                                           ->tensorflow_accelerator_device_info()
                                           ->use_pjrt_tensor_buffer;
 
-  const DeviceType& device_type = GetDeviceType(ctx);
   TF_ASSIGN_OR_RETURN(const int pjrt_device_id,
                       tsl::GetDeviceIdFromDeviceParsedName(
-                          ctx->device()->parsed_name(), device_type));
+                          ctx->device()->parsed_name(), GetDeviceType(ctx)));
   TF_ASSIGN_OR_RETURN(xla::PjRtDevice * device,
                       pjrt_client->LookupAddressableDevice(pjrt_device_id));
 
@@ -859,22 +833,13 @@ Status RunPjRtExecutable(
       variable_snapshots, pjrt_client, device, use_pjrt_tensor_buffer,
       &executable_args, &owned_executable_args, &non_donatable_input_indices));
 
-  std::vector<std::unique_ptr<xla::PjRtBuffer>> execute_outputs;
-  if (executable->num_replicas() != 1 || executable->num_partitions() != 1) {
-    TF_ASSIGN_OR_RETURN(
-        execute_outputs,
-        executable->ExecuteSharded(
-            executable_args, device,
-            GetPjRtExecuteOptions(device_type,
-                                  std::move(non_donatable_input_indices))));
-  } else {
-    TF_ASSIGN_OR_RETURN(
-        execute_outputs,
-        executable->ExecutePortable(
-            executable_args, device,
-            GetPjRtExecuteOptions(device_type,
-                                  std::move(non_donatable_input_indices))));
-  }
+  // TODO(b/257548614): currently PJRT is compiled as portable (num_replica = 1
+  // and num_partition = 1). Support multiple partitions case.
+  TF_ASSIGN_OR_RETURN(
+      std::vector<std::unique_ptr<xla::PjRtBuffer>> execute_outputs,
+      executable->ExecutePortable(
+          executable_args, device,
+          GetPjRtExecuteOptions(std::move(non_donatable_input_indices))));
 
   // We need to ensure the PjRtBuffers owned by `owned_executable_args` live
   // until execution is complete.

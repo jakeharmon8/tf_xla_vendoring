@@ -2,7 +2,7 @@
 
 // Check that we outline the partitioned call with `_xla_compile_device_type`
 // to a device cluster.
-// CHECK-LABEL: func.func @xla_must_compile_true
+// CHECK-LABEL: func.func @local_xla_must_compile_true
 // CHECK: tf_device.cluster
 // CHECK-NEXT: tf.StatefulPartitionedCall
 // CHECK-NEXT: tf_device.return
@@ -10,7 +10,7 @@
 // CHECK-SAME: allow_soft_placement = true
 // CHECK: tf.Const
 // CHECK: tf.Add
-func.func @xla_must_compile_true(%arg0: tensor<i32>) -> tensor<i32> attributes {tf.entry_function = {}} {
+func.func @local_xla_must_compile_true(%arg0: tensor<i32>) -> tensor<i32> attributes {tf.entry_function = {}} {
   %0 = "tf.StatefulPartitionedCall"(%arg0) {config = "", config_proto = "", executor_type = "", _xla_compile_device_type = "CPU", f = @stateful_pcall_func} : (tensor<i32>) -> (tensor<i32>)
   %1 = "tf.Const"() {value = dense<5> : tensor<i32>} : () -> tensor<i32>
   %2 = "tf.Add"(%0, %1) : (tensor<i32>, tensor<i32>) -> (tensor<i32>)
@@ -24,9 +24,9 @@ func.func @stateful_pcall_func(%arg0: tensor<i32>) -> tensor<i32> {
 
 // Check that we don't outline the partitioned call without
 // `_xla_compile_device_type` to a device cluster.
-// CHECK-LABEL: func.func @xla_must_compile_false
+// CHECK-LABEL: func.func @local_xla_must_compile_false
 // CHECK-NOT: tf_device.cluster
-func.func @xla_must_compile_false(%arg0: tensor<i32>) -> tensor<i32> attributes {tf.entry_function = {}} {
+func.func @local_xla_must_compile_false(%arg0: tensor<i32>) -> tensor<i32> attributes {tf.entry_function = {}} {
   %0 = "tf.StatefulPartitionedCall"(%arg0) {config = "", config_proto = "", executor_type = "", f = @stateful_pcall_func} : (tensor<i32>) -> (tensor<i32>)
   %1 = "tf.Const"() {value = dense<5> : tensor<i32>} : () -> tensor<i32>
   %2 = "tf.Add"(%0, %1) : (tensor<i32>, tensor<i32>) -> (tensor<i32>)

@@ -18,10 +18,9 @@ load(
     "cc_test",
 )
 load(
-    "//tensorflow/tsl:tsl.bzl",
+    "@local_tsl//tsl:tsl.bzl",
     "tsl_gpu_library",
     _cc_header_only_library = "cc_header_only_library",
-    _clean_dep = "clean_dep",
     _if_cuda_or_rocm = "if_cuda_or_rocm",
     _if_nccl = "if_nccl",
     _transitive_hdrs = "transitive_hdrs",
@@ -53,10 +52,7 @@ load(
     "if_mkldnn_aarch64_acl",
     "if_mkldnn_aarch64_acl_openmp",
     "if_mkldnn_openmp",
-)
-load(
-    "//tensorflow/tsl/mkl:build_defs.bzl",
-    "onednn_v3_define",
+    "if_onednn_v3",
 )
 load(
     "//third_party/compute_library:build_defs.bzl",
@@ -91,7 +87,17 @@ two_gpu_tags = ["requires-gpu-nvidia:2", "notap", "manual", "no_pip"]
 # external project.
 workspace_root = Label("//:WORKSPACE").workspace_root or "."
 
-clean_dep = _clean_dep
+def clean_dep(target):
+    """Returns string to 'target' in @org_tensorflow repository.
+
+    Use this function when referring to targets in the @org_tensorflow
+    repository from macros that may be called from external repositories.
+    """
+
+    # A repo-relative label is resolved relative to the file in which the
+    # Label() call appears, i.e. @local_tsl.
+    return str(Label(target))
+
 cc_header_only_library = _cc_header_only_library
 transitive_hdrs = _transitive_hdrs
 
@@ -444,7 +450,7 @@ def tf_copts(
         # optimizations for Intel builds using oneDNN if configured
         if_enable_mkl(["-DENABLE_MKL"]) +
         if_mkldnn_openmp(["-DENABLE_ONEDNN_OPENMP"]) +
-        onednn_v3_define() +
+        if_onednn_v3(["-DENABLE_ONEDNN_V3"]) +
         if_mkldnn_aarch64_acl(["-DDNNL_AARCH64_USE_ACL=1"]) +
         if_mkldnn_aarch64_acl_openmp(["-DENABLE_ONEDNN_OPENMP"]) +
         if_zendnn(["-DAMD_ZENDNN"]) +
@@ -1895,7 +1901,7 @@ def tf_gpu_kernel_library(
         hdrs = hdrs,
         copts = copts,
         deps = deps + if_cuda([
-            clean_dep("//tensorflow/tsl/cuda:cudart_stub"),
+            clean_dep("@local_tsl//tsl/cuda:cudart_stub"),
         ]) + if_cuda_or_rocm([
             clean_dep("//tensorflow/core:gpu_lib"),
         ]),
@@ -2117,7 +2123,7 @@ def _get_repository_roots(ctx, files):
 def tf_custom_op_library_additional_deps():
     return [
         "@com_google_protobuf//:protobuf_headers",  # copybara:comment
-        clean_dep("//third_party/eigen3"),
+        clean_dep("@eigen_archive//:eigen3"),
         clean_dep("//tensorflow/core:framework_headers_lib"),
     ]
 
@@ -2132,7 +2138,7 @@ def tf_custom_op_library_additional_deps_impl():
         # copybara:comment_end
 
         # for //third_party/eigen3
-        clean_dep("//third_party/eigen3"),
+        clean_dep("@eigen_archive//:eigen3"),
 
         # for //tensorflow/core:framework_headers_lib
         clean_dep("//tensorflow/core:framework"),
@@ -2474,7 +2480,7 @@ def pywrap_tensorflow_macro_opensource(
     # TODO(b/271333181): This should be done more generally on Windows for every dll dependency
     # (there is only one currently) that is not in the same directory, otherwise Python will fail to
     # link the pyd (which is just a dll) because of missing dependencies.
-    _create_symlink("ml_dtypes.so", "//tensorflow/tsl/python/lib/core:ml_dtypes.so")
+    _create_symlink("ml_dtypes.so", "@local_tsl//tsl/python/lib/core:ml_dtypes.so")
 
     _plain_py_library(
         name = name,
@@ -2484,7 +2490,7 @@ def pywrap_tensorflow_macro_opensource(
             clean_dep("//tensorflow:windows"): [
                 ":" + cc_library_pyd_name,
                 ":ml_dtypes.so",
-                "//tensorflow/tsl/python/lib/core:ml_dtypes.so",
+                "@local_tsl//tsl/python/lib/core:ml_dtypes.so",
             ],
             "//conditions:default": [
                 ":" + cc_shared_library_name,
@@ -3262,9 +3268,9 @@ def tf_python_pybind_static_deps(testonly = False):
         "@local_config_tensorrt//:__subpackages__",
         "@local_execution_config_platform//:__subpackages__",
         "@mkl_dnn_acl_compatible//:__subpackages__",
+        "@mkl_dnn_v1//:__subpackages__",
         "@nsync//:__subpackages__",
         "@nccl_archive//:__subpackages__",
-        "@onednn//:__subpackages__",
         "@org_sqlite//:__subpackages__",
         "@platforms//:__subpackages__",
         "@png//:__subpackages__",
@@ -3277,12 +3283,14 @@ def tf_python_pybind_static_deps(testonly = False):
         "@tf_runtime//:__subpackages__",
         "@upb//:__subpackages__",
         "@zlib//:__subpackages__",
+        "@local_tsl//tsl:__subpackages__",
     ]
     static_deps += tsl_async_value_deps()
     static_deps += [] if not testonly else [
         "@com_google_benchmark//:__subpackages__",
         "@com_google_googletest//:__subpackages__",
     ]
+    static_deps += if_onednn_v3(["@onednn_v3//:__subpackages__"])
     return if_oss(static_deps)
 
 # buildozer: enable=function-docstring-args
@@ -3531,6 +3539,3 @@ def replace_with_portable_tf_lib_when_required(non_portable_tf_deps, use_lib_wit
         "//tensorflow:ios": [portable_tf_lib],
         "//conditions:default": non_portable_tf_deps,
     })
-
-def tf_python_framework_friends():
-    return ["//tensorflow:__subpackages__"]

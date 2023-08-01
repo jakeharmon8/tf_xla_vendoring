@@ -23,7 +23,6 @@ limitations under the License.
 #include "tensorflow/core/framework/node_def_util.h"
 #include "tensorflow/core/graph/control_flow.h"
 #include "tensorflow/core/graph/graph.h"
-#include "tensorflow/core/graph/graph_debug_info_builder.h"
 
 namespace tensorflow {
 
@@ -51,9 +50,7 @@ Status FunctionDefToBodyHelper(
   GraphConstructorOptions opts;
   opts.allow_internal_ops = true;
   opts.expect_device_spec = false;
-
-  TF_RETURN_IF_ERROR(ConvertNodeDefsToGraph(opts, result.nodes, graph.get(),
-                                            /*debug_info=*/nullptr));
+  TF_RETURN_IF_ERROR(ConvertNodeDefsToGraph(opts, result.nodes, graph.get()));
 
   const StackTracesMap* stack_traces =
       lib_def->GetStackTraces(fdef.signature().name());

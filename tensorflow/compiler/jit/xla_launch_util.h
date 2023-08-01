@@ -26,10 +26,10 @@ limitations under the License.
 #include "tensorflow/compiler/jit/variable_info.h"
 #include "tensorflow/compiler/jit/xla_tensor.h"
 #include "tensorflow/compiler/tf2xla/xla_compiler.h"
-#include "tensorflow/compiler/xla/client/local_client.h"
-#include "tensorflow/compiler/xla/pjrt/pjrt_client.h"
-#include "tensorflow/compiler/xla/service/shaped_buffer.h"
-#include "tensorflow/compiler/xla/stream_executor/device_memory_allocator.h"
+#include "xla/client/local_client.h"
+#include "xla/pjrt/pjrt_client.h"
+#include "xla/service/shaped_buffer.h"
+#include "xla/stream_executor/device_memory_allocator.h"
 #include "tensorflow/core/framework/allocation_description.pb.h"
 #include "tensorflow/core/framework/tensor.h"
 #include "tensorflow/core/lib/core/status.h"
@@ -105,7 +105,6 @@ Status PopulateCtxOutputsFromPjRtExecutableOutputs(
 
 // Returns the options used for executing a PjRtLoadedExecutable.
 xla::ExecuteOptions GetPjRtExecuteOptions(
-    const DeviceType& device_type,
     absl::flat_hash_set<int> non_donatable_input_indices);
 
 // Returns the device ordinal from the parsed name of the device.

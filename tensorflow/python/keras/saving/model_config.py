@@ -16,8 +16,10 @@
 """Functions that save the model's config into different formats."""
 
 from tensorflow.python.keras.saving.saved_model import json_utils
+from tensorflow.python.util.tf_export import keras_export
 
 
+@keras_export('keras.models.model_from_config')
 def model_from_config(config, custom_objects=None):
   """Instantiates a Keras model from its config.
 
@@ -50,6 +52,7 @@ def model_from_config(config, custom_objects=None):
   return deserialize(config, custom_objects=custom_objects)
 
 
+@keras_export('keras.models.model_from_yaml')
 def model_from_yaml(yaml_string, custom_objects=None):
   """Parses a yaml model configuration file and returns a model instance.
 
@@ -75,6 +78,7 @@ def model_from_yaml(yaml_string, custom_objects=None):
   )
 
 
+@keras_export('keras.models.model_from_json')
 def model_from_json(json_string, custom_objects=None):
   """Parses a JSON model configuration string and returns a model instance.
 

@@ -798,12 +798,28 @@ void CloneFirstHost(llvm::SmallVector<IRMapping>& core_to_mapping,
                      llvm::dyn_cast<TF::_XlaRecvAtHostV2Op>(clone)) {
         recv_at_host.setOperand(0, core_to_compilation_key[core]);
         builder.setInsertionPoint(recv_at_host);
-        recv_at_host.setOperand(1, core_to_device_ordinal[core]);
+        // core_ordinal = device_ordinal + core
+        // where device_ordinal is the base device for the replica
+        Value device_ordinal = core_to_device_ordinal[core];
+        Value const_core = builder.create<TF::ConstOp>(
+            recv_at_host.getLoc(), builder.getI64IntegerAttr(core));
+        Value core_ordinal = builder.create<TF::AddV2Op>(
+            recv_at_host.getLoc(), device_ordinal.getType(), device_ordinal,
+            const_core);
+        recv_at_host.setOperand(1, core_ordinal);
       } else if (auto send_from_host =
                      llvm::dyn_cast<TF::_XlaSendFromHostV2Op>(clone)) {
         send_from_host.setOperand(1, core_to_compilation_key[core]);
         builder.setInsertionPoint(send_from_host);
-        send_from_host.setOperand(2, core_to_device_ordinal[core]);
+        // core_ordinal = device_ordinal + core
+        // where device_ordinal is the base device for the replica
+        Value device_ordinal = core_to_device_ordinal[core];
+        Value const_core = builder.create<TF::ConstOp>(
+            send_from_host.getLoc(), builder.getI64IntegerAttr(core));
+        Value core_ordinal = builder.create<TF::AddV2Op>(
+            send_from_host.getLoc(), device_ordinal.getType(), device_ordinal,
+            const_core);
+        send_from_host.setOperand(2, core_ordinal);
       }
     }
   }
@@ -1425,8 +1441,7 @@ LogicalResult CreateParallelExecuteForOutsideCompilation(
     if (has_tpu_device) {
       device_ordinal_op = builder.create<TF::_TPUDeviceOrdinalPlaceholderOp>(
           device_cluster.getLoc(),
-          RankedTensorType::get({}, builder.getI64Type()),
-          builder.getI64IntegerAttr(core));
+          RankedTensorType::get({}, builder.getI64Type()));
     } else {
       device_ordinal_op = builder.create<TF::ConstOp>(
           device_cluster.getLoc(),

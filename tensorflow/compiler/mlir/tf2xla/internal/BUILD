@@ -25,7 +25,7 @@ tf_cc_test(
         ":mlir_pass_instrumentation",
         "//tensorflow/compiler/mlir/tf2xla/api/v0:compile_mlir_util_no_tf_dialect_passes",
         "//tensorflow/core:test",
-        "//tensorflow/tsl/lib/core:status_test_util",
         "@com_google_googletest//:gtest_main",
+        "@local_tsl//tsl/lib/core:status_test_util",
     ],
 )

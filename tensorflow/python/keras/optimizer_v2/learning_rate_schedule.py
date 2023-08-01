@@ -27,8 +27,10 @@ from tensorflow.python.ops import control_flow_case
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import random_ops
 from tensorflow.python.util import nest
+from tensorflow.python.util.tf_export import keras_export
 
 
+@keras_export("keras.optimizers.schedules.LearningRateSchedule")
 class LearningRateSchedule(object):
   """The learning rate schedule base class.
 
@@ -93,6 +95,7 @@ class LearningRateSchedule(object):
     return cls(**config)
 
 
+@keras_export("keras.optimizers.schedules.ExponentialDecay")
 class ExponentialDecay(LearningRateSchedule):
   """A LearningRateSchedule that uses an exponential decay schedule.
 
@@ -200,6 +203,7 @@ class ExponentialDecay(LearningRateSchedule):
     }
 
 
+@keras_export("keras.optimizers.schedules.PiecewiseConstantDecay")
 class PiecewiseConstantDecay(LearningRateSchedule):
   """A LearningRateSchedule that uses a piecewise constant decay schedule.
 
@@ -305,6 +309,7 @@ class PiecewiseConstantDecay(LearningRateSchedule):
     }
 
 
+@keras_export("keras.optimizers.schedules.PolynomialDecay")
 class PolynomialDecay(LearningRateSchedule):
   """A LearningRateSchedule that uses a polynomial decay schedule.
 
@@ -451,6 +456,7 @@ class PolynomialDecay(LearningRateSchedule):
     }
 
 
+@keras_export("keras.optimizers.schedules.InverseTimeDecay")
 class InverseTimeDecay(LearningRateSchedule):
   """A LearningRateSchedule that uses an inverse time decay schedule.
 
@@ -559,6 +565,8 @@ class InverseTimeDecay(LearningRateSchedule):
     }
 
 
+@keras_export("keras.optimizers.schedules.CosineDecay",
+              "keras.experimental.CosineDecay")
 class CosineDecay(LearningRateSchedule):
   """A LearningRateSchedule that uses a cosine decay schedule.
 
@@ -654,6 +662,8 @@ class CosineDecay(LearningRateSchedule):
     }
 
 
+@keras_export("keras.optimizers.schedules.CosineDecayRestarts",
+              "keras.experimental.CosineDecayRestarts")
 class CosineDecayRestarts(LearningRateSchedule):
   """A LearningRateSchedule that uses a cosine decay schedule with restarts.
 
@@ -1044,10 +1054,12 @@ class NoisyLinearCosineDecay(LearningRateSchedule):
     }
 
 
+@keras_export("keras.optimizers.schedules.serialize")
 def serialize(learning_rate_schedule):
   return generic_utils.serialize_keras_object(learning_rate_schedule)
 
 
+@keras_export("keras.optimizers.schedules.deserialize")
 def deserialize(config, custom_objects=None):
   return generic_utils.deserialize_keras_object(
       config,

@@ -180,11 +180,10 @@ PYBIND11_MODULE(pywrap_quantize_model, m) {
       [](const absl::string_view saved_model_path,
          const std::vector<std::string>& signature_keys,
          const std::unordered_set<std::string>& tags,
-         const QuantizationOptions& quant_opts,
-         const absl::flat_hash_map<std::string, std::string>& function_aliases)
+         const QuantizationOptions& quant_opts)
           -> absl::StatusOr<ExportedModel> {
         return QuantizePtqDynamicRange(saved_model_path, signature_keys, tags,
-                                       quant_opts, function_aliases);
+                                       quant_opts);
       },
       R"pbdoc(
       Returns serialized ExportedModel that contains the quantized model's

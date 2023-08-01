@@ -62,6 +62,7 @@ from tensorflow.python.platform import tf_logging as logging
 from tensorflow.python.profiler import profiler_v2 as profiler
 from tensorflow.python.saved_model import save_options as save_options_lib
 from tensorflow.python.util import nest
+from tensorflow.python.util.tf_export import keras_export
 from tensorflow.tools.docs import doc_controls
 
 try:
@@ -198,6 +199,7 @@ def make_logs(model, logs, outputs, mode, prefix=''):
   return logs
 
 
+@keras_export('keras.callbacks.CallbackList')
 class CallbackList:
   """Container abstracting a list of callbacks."""
 
@@ -588,6 +590,7 @@ class CallbackList:
     # pylint: enable=protected-access
 
 
+@keras_export('keras.callbacks.Callback')
 class Callback:
   """Abstract base class used to build new callbacks.
 
@@ -899,6 +902,7 @@ class Callback:
             not generic_utils.is_default(self.on_predict_batch_end))
 
 
+@keras_export('keras.callbacks.BaseLogger')
 class BaseLogger(Callback):
   """Callback that accumulates epoch averages of metrics.
 
@@ -947,6 +951,7 @@ class BaseLogger(Callback):
             logs[k] = self.totals[k] / self.seen
 
 
+@keras_export('keras.callbacks.TerminateOnNaN')
 class TerminateOnNaN(Callback):
   """Callback that terminates training when a NaN loss is encountered.
   """
@@ -965,6 +970,7 @@ class TerminateOnNaN(Callback):
         self.model.stop_training = True
 
 
+@keras_export('keras.callbacks.ProgbarLogger')
 class ProgbarLogger(Callback):
   """Callback that prints metrics to stdout.
 
@@ -1131,6 +1137,7 @@ class ProgbarLogger(Callback):
     self.progbar.update(self.target, list(logs.items()), finalize=True)
 
 
+@keras_export('keras.callbacks.History')
 class History(Callback):
   """Callback that records events into a `History` object.
 
@@ -1170,6 +1177,7 @@ class History(Callback):
     self.model.history = self
 
 
+@keras_export('keras.callbacks.ModelCheckpoint')
 class ModelCheckpoint(Callback):
   """Callback to save the Keras model or model weights at some frequency.
 
@@ -1585,6 +1593,7 @@ class ModelCheckpoint(Callback):
       return file_path_with_largest_file_name
 
 
+@keras_export('keras.callbacks.experimental.BackupAndRestore', v1=[])
 class BackupAndRestore(Callback):
   """Callback to back up and restore the training state.
 
@@ -1699,6 +1708,7 @@ class BackupAndRestore(Callback):
     self._training_state.back_up(epoch)
 
 
+@keras_export('keras.callbacks.EarlyStopping')
 class EarlyStopping(Callback):
   """Stop training when a monitored metric has stopped improving.
 
@@ -1842,6 +1852,7 @@ class EarlyStopping(Callback):
     return self.monitor_op(monitor_value - self.min_delta, reference_value)
 
 
+@keras_export('keras.callbacks.RemoteMonitor')
 class RemoteMonitor(Callback):
   """Callback used to stream events to a server.
 
@@ -1904,6 +1915,7 @@ class RemoteMonitor(Callback):
                       'root server at ' + str(self.root))
 
 
+@keras_export('keras.callbacks.LearningRateScheduler')
 class LearningRateScheduler(Callback):
   """Learning rate scheduler.
 
@@ -2014,6 +2026,7 @@ def keras_model_summary(name, data, step=None):
         tag=tag, tensor=tensor, step=step, metadata=summary_metadata)
 
 
+@keras_export('keras.callbacks.TensorBoard', v1=[])
 class TensorBoard(Callback, version_utils.TensorBoardVersionSelector):
   # pylint: disable=line-too-long
   """Enable visualizations for TensorBoard.
@@ -2583,6 +2596,7 @@ class TensorBoard(Callback, version_utils.TensorBoardVersionSelector):
       self._profiler_started = False
 
 
+@keras_export('keras.callbacks.ReduceLROnPlateau')
 class ReduceLROnPlateau(Callback):
   """Reduce learning rate when a metric has stopped improving.
 
@@ -2706,6 +2720,7 @@ class ReduceLROnPlateau(Callback):
     return self.cooldown_counter > 0
 
 
+@keras_export('keras.callbacks.CSVLogger')
 class CSVLogger(Callback):
   """Callback that streams epoch results to a CSV file.
 
@@ -2788,6 +2803,7 @@ class CSVLogger(Callback):
     self.writer = None
 
 
+@keras_export('keras.callbacks.LambdaCallback')
 class LambdaCallback(Callback):
   r"""Callback for creating simple, custom callbacks on-the-fly.
 

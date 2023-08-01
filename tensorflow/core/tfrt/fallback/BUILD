@@ -116,7 +116,7 @@ cc_library(
     hdrs = ["device_with_custom_allocator.h"],
     deps = [
         "//tensorflow/core:framework",
-        "//tensorflow/tsl/framework:allocator",
+        "@local_tsl//tsl/framework:allocator",
     ],
 )
 

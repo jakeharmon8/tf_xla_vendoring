@@ -164,7 +164,6 @@ py_strict_library(
         "//tensorflow/python/ops:array_ops",
         "//tensorflow/python/ops:cond",
         "//tensorflow/python/ops:math_ops",
-        "//tensorflow/python/ops:nn_ops",
         "//tensorflow/python/ops:special_math_ops",
         "//tensorflow/python/util:dispatch",
         "//tensorflow/python/util:tf_export",

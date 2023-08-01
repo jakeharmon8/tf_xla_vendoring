@@ -15,7 +15,7 @@ limitations under the License.
 
 #include "tensorflow/core/tpu/graph_rewrite/incomplete_nodedef_builder.h"
 
-#include "tensorflow/compiler/xla/status_macros.h"
+#include "xla/status_macros.h"
 #include "tensorflow/core/common_runtime/function.h"
 
 namespace tensorflow {

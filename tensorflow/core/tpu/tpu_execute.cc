@@ -17,8 +17,6 @@ limitations under the License.
 
 #include <cstdint>
 #include <cstdlib>
-#include <cstring>
-#include <functional>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -30,49 +28,49 @@ limitations under the License.
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "tensorflow/compiler/xla/executable_run_options.h"
-#include "tensorflow/compiler/xla/hlo/ir/hlo_input_output_alias_config.h"
-#include "tensorflow/compiler/xla/hlo/ir/hlo_module.h"
-#include "tensorflow/compiler/xla/service/backend.h"
-#include "tensorflow/compiler/xla/service/computation_layout.h"
-#include "tensorflow/compiler/xla/service/executable.h"
-#include "tensorflow/compiler/xla/service/hlo.pb.h"
-#include "tensorflow/compiler/xla/service/hlo_module_config.h"
-#include "tensorflow/compiler/xla/service/maybe_owning_device_memory.h"
-#include "tensorflow/compiler/xla/service/service_executable_run_options.h"
-#include "tensorflow/compiler/xla/service/transfer_manager.h"
-#include "tensorflow/compiler/xla/shape.h"
-#include "tensorflow/compiler/xla/shape_layout.h"
-#include "tensorflow/compiler/xla/shape_tree.h"
-#include "tensorflow/compiler/xla/shape_util.h"
-#include "tensorflow/compiler/xla/status.h"
-#include "tensorflow/compiler/xla/status_macros.h"
-#include "tensorflow/compiler/xla/statusor.h"
-#include "tensorflow/compiler/xla/stream_executor/device_memory.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/c_api_conversions.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/c_api_decl.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/c_api_defn.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/host_command_handler.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/proto_helper.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/status_helper.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_api.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_node_context.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_op_executable.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_ops_c_api.h"
-#include "tensorflow/compiler/xla/stream_executor/tpu/tpu_platform_interface.h"
-#include "tensorflow/compiler/xla/util.h"
-#include "tensorflow/compiler/xla/xla_data.pb.h"
-#include "tensorflow/core/common_runtime/next_pluggable_device/c/outside_compilation_params.h"
-#include "tensorflow/core/common_runtime/next_pluggable_device/c/tf_rendezvous_c_api_conversions.h"
+#include "xla/executable_run_options.h"
+#include "xla/hlo/ir/hlo_input_output_alias_config.h"
+#include "xla/hlo/ir/hlo_module.h"
+#include "xla/service/backend.h"
+#include "xla/service/computation_layout.h"
+#include "xla/service/executable.h"
+#include "xla/service/hlo.pb.h"
+#include "xla/service/hlo_module_config.h"
+#include "xla/service/maybe_owning_device_memory.h"
+#include "xla/service/service_executable_run_options.h"
+#include "xla/service/transfer_manager.h"
+#include "xla/shape.h"
+#include "xla/shape_layout.h"
+#include "xla/shape_tree.h"
+#include "xla/shape_util.h"
+#include "xla/status.h"
+#include "xla/status_macros.h"
+#include "xla/statusor.h"
+#include "xla/stream_executor/device_memory.h"
+#include "xla/stream_executor/tpu/c_api_conversions.h"
+#include "xla/stream_executor/tpu/c_api_decl.h"
+#include "xla/stream_executor/tpu/c_api_defn.h"
+#include "xla/stream_executor/tpu/host_command_handler.h"
+#include "xla/stream_executor/tpu/status_helper.h"
+#include "xla/stream_executor/tpu/tpu_api.h"
+#include "xla/stream_executor/tpu/tpu_executor_c_api.h"
+#include "xla/stream_executor/tpu/tpu_node_context.h"
+#include "xla/stream_executor/tpu/tpu_op_executable.h"
+#include "xla/stream_executor/tpu/tpu_ops_c_api.h"
+#include "xla/stream_executor/tpu/tpu_platform_interface.h"
+#include "xla/util.h"
+#include "xla/xla_data.pb.h"
 #include "tensorflow/core/framework/op_kernel.h"
+#include "tensorflow/core/platform/casts.h"
 #include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/platform/errors.h"
 #include "tensorflow/core/platform/macros.h"
 #include "tensorflow/core/profiler/lib/traceme.h"
 #include "tensorflow/core/tpu/kernels/tpu_executable_info.pb.h"
-#include "tensorflow/tsl/framework/cancellation.h"
-#include "tensorflow/tsl/platform/errors.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tensorflow/core/tpu/kernels/tpu_execute_op_options.h"
+#include "tsl/framework/cancellation.h"
+#include "tsl/platform/errors.h"
+#include "tsl/platform/statusor.h"
 
 namespace tensorflow {
 
@@ -408,7 +406,7 @@ void UnregisterCancellation(
     //   4) StartCancel() in (1) cannot complete until (3) is done.
     //
     // Instead, call TryDeregisterCallback. The functional difference is
-    // TryDeregisterCallback will not block if cancellation is in progress
+    // TryDeregisterCallback will not block if cancellation is in proress
     // so makes no guarantees as to the state of any callbacks.
     // This is not a problem, as our cancellation handler does not rely on
     // any external state.
@@ -425,27 +423,6 @@ void UnregisterCancellation(
     dec_num_deferred_ops_function();
   });
   stream->ReturnSubStream(deregister_stream);
-}
-
-std::unique_ptr<SE_OutsideCompilationParams,
-                std::function<void(SE_OutsideCompilationParams*)>>
-CreateOcParams(const std::string& rendezvous_key_base,
-               OpKernelContext* op_kernel_context,
-               const TPUHostTransferInfoProto& host_transfers) {
-  std::unique_ptr<SE_OutsideCompilationParams,
-                  std::function<void(SE_OutsideCompilationParams*)>>
-      oc_params(new SE_OutsideCompilationParams(), &DestroyOCParams);
-  const std::string& device_name = op_kernel_context->device()->name();
-  oc_params->device_name = new char[device_name.size() + 1];
-  std::strncpy(oc_params->device_name, device_name.c_str(),
-               device_name.size() + 1);
-  oc_params->rendezvous_key = new char[rendezvous_key_base.size() + 1];
-  std::strncpy(oc_params->rendezvous_key, rendezvous_key_base.c_str(),
-               rendezvous_key_base.size() + 1);
-  oc_params->rendezvous = ToC(op_kernel_context->rendezvous());
-  oc_params->host_transfers =
-      stream_executor::tpu::SerializeProto(host_transfers);
-  return oc_params;
 }
 
 }  // namespace
@@ -561,12 +538,8 @@ xla::StatusOr<xla::ExecutionOutput> TPUExecute(
     arguments.push_back(std::move(input));
   }
 
-  std::unique_ptr<SE_OutsideCompilationParams,
-                  std::function<void(SE_OutsideCompilationParams*)>>
-      oc_params = CreateOcParams(rendezvous_key_base, ctx, host_transfers);
-
   auto tpu_executable = std::make_unique<TpuOpExecutable>(
-      tpu_program, std::move(module), oc_params.get());
+      tpu_program, std::move(module), host_command_handler);
 
   const int32_t device_ordinal = node_context->device_ordinal();
   CancellationToken token;

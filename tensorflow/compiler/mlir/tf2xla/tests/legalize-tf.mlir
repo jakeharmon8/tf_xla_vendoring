@@ -3538,7 +3538,7 @@ func.func @strided_slice_nonconstant_begin_end(%arg0: tensor<i32>, %arg1: tensor
   // CHECK-NEXT: %[[CMP:.*]] = chlo.broadcast_compare %[[INDEX2]], %[[ZERO]]
   // CHECK-DAG-SAME: {comparison_direction = #mhlo<comparison_direction LT>} : (tensor<i32>, tensor<i32>) -> tensor<i1>
   // CHECK-NEXT: %[[DIM:.*]] = mhlo.constant dense<32> : tensor<i32>
-  // CHECK-NEXT: %[[WRAP:.*]] = chlo.broadcast_add %[[INDEX2]], %[[DIM]] : (tensor<i32>, tensor<i32>) -> tensor<i32>
+  // CHECK-NEXT: %[[WRAP:.*]] = chlo.broadcast_add %[[DIM]], %[[INDEX2]] : (tensor<i32>, tensor<i32>) -> tensor<i32>
   // CHECK-NEXT: %[[INDEX3:.*]] = mhlo.select %[[CMP]], %[[WRAP]], %[[INDEX2]] :
   // CHECK-DAG-SAME: (tensor<i1>, tensor<i32>, tensor<i32>) -> tensor<i32>
   // CHECK-NEXT: %[[SLICED:.*]] = "mhlo.dynamic_slice"
@@ -3567,7 +3567,7 @@ func.func @strided_slice_nonconstant_begin_end_with_start_end_mask(%input: tenso
   // CHECK-NEXT: %[[CMP:.*]] = chlo.broadcast_compare %[[INDEX2]], %[[ZERO]]
   // CHECK-DAG-SAME: {comparison_direction = #mhlo<comparison_direction LT>} : (tensor<i32>, tensor<i32>) -> tensor<i1>
   // CHECK-NEXT: %[[DIM:.*]] = mhlo.constant dense<32> : tensor<i32>
-  // CHECK-NEXT: %[[WRAP:.*]] = chlo.broadcast_add %[[INDEX2]], %[[DIM]] : (tensor<i32>, tensor<i32>) -> tensor<i32>
+  // CHECK-NEXT: %[[WRAP:.*]] = chlo.broadcast_add %[[DIM]], %[[INDEX2]] : (tensor<i32>, tensor<i32>) -> tensor<i32>
   // CHECK-NEXT: %[[INDEX3:.*]] = mhlo.select %[[CMP]], %[[WRAP]], %[[INDEX2]] :
   // CHECK-DAG-SAME: (tensor<i1>, tensor<i32>, tensor<i32>) -> tensor<i32>
   // CHECK-NEXT: %[[SLICED:.*]] = "mhlo.dynamic_slice"
@@ -5757,7 +5757,7 @@ func.func @avgpool_grad_bf16(%grad: tensor<10x12x16x64xbf16>) -> tensor<10x24x32
 // -----
 
 // CHECK-LABEL: xla_sharding
-func.func @xla_sharding(%arg0: tensor<4x16xf32>) -> tensor<4x16xf32> {
+func.func @local_xla_sharding(%arg0: tensor<4x16xf32>) -> tensor<4x16xf32> {
   // CHECK-NEXT: mhlo.custom_call @Sharding(%arg0) {mhlo.sharding = ""}
   %0 = "tf.XlaSharding"(%arg0) {_XlaSharding = "", sharding = ""} : (tensor<4x16xf32>) -> tensor<4x16xf32>
   func.return %0 : tensor<4x16xf32>
@@ -5804,7 +5804,7 @@ func.func @inplace_update_three(%arg0: tensor<8x8x4xf32>, %arg1: tensor<3x8x4xf3
 // -----
 
 // CHECK-LABEL: xla_dynamic_update_slice
-func.func @xla_dynamic_update_slice(%arg0: tensor<4x16xf32>, %arg1: tensor<2x4xf32>, %arg2: tensor<2xi32>) -> tensor<4x16xf32> {
+func.func @local_xla_dynamic_update_slice(%arg0: tensor<4x16xf32>, %arg1: tensor<2x4xf32>, %arg2: tensor<2xi32>) -> tensor<4x16xf32> {
   // CHECK: [[SLICE0:%.+]] = "mhlo.slice"(%arg2) {limit_indices = dense<1> : tensor<1xi64>, start_indices = dense<0> : tensor<1xi64>, strides = dense<1> : tensor<1xi64>} : (tensor<2xi32>) -> tensor<1xi32>
   // CHECK: [[RESHAPE0:%.+]] = mhlo.reshape [[SLICE0]] : (tensor<1xi32>) -> tensor<i32>
   // CHECK: [[SLICE1:%.+]] = "mhlo.slice"(%arg2) {limit_indices = dense<2> : tensor<1xi64>, start_indices = dense<1> : tensor<1xi64>, strides = dense<1> : tensor<1xi64>} : (tensor<2xi32>) -> tensor<1xi32>
@@ -5818,7 +5818,7 @@ func.func @xla_dynamic_update_slice(%arg0: tensor<4x16xf32>, %arg1: tensor<2x4xf
 // -----
 
 // CHECK-LABEL: xla_dynamic_update_slice2
-func.func @xla_dynamic_update_slice2(%arg0: tensor<4xf32>, %arg1: tensor<2xf32>, %arg2: tensor<1xi32>) -> tensor<4xf32> {
+func.func @local_xla_dynamic_update_slice2(%arg0: tensor<4xf32>, %arg1: tensor<2xf32>, %arg2: tensor<1xi32>) -> tensor<4xf32> {
   // CHECK: [[SLICE0:%.+]] = "mhlo.slice"(%arg2) {limit_indices = dense<1> : tensor<1xi64>, start_indices = dense<0> : tensor<1xi64>, strides = dense<1> : tensor<1xi64>} : (tensor<1xi32>) -> tensor<1xi32>
   // CHECK: [[RESHAPE0:%.+]] = mhlo.reshape [[SLICE0]] : (tensor<1xi32>) -> tensor<i32>
   // CHECK: [[DUS:%.+]] = mhlo.dynamic_update_slice %arg0, %arg1, [[RESHAPE0]] : (tensor<4xf32>, tensor<2xf32>, tensor<i32>) -> tensor<4xf32>
@@ -6599,8 +6599,8 @@ func.func @softplus_f64(%arg0: tensor<8x16xf64>) -> tensor<8x16xf64> {
 
 // -----
 
-// CHECK-LABEL: @xla_gather
-func.func @xla_gather(%arg0: tensor<200x100x300xf32>, %arg1: tensor<10x2xi32>) -> tensor<1x300x10xf32> {
+// CHECK-LABEL: @local_xla_gather
+func.func @local_xla_gather(%arg0: tensor<200x100x300xf32>, %arg1: tensor<10x2xi32>) -> tensor<1x300x10xf32> {
   %cst = "tf.Const"() { value = dense<[1, 1, 300]> : tensor<3xi64> } : () -> tensor<3xi64>
 
   // CHECK: "mhlo.gather"
@@ -6618,8 +6618,8 @@ func.func @xla_gather(%arg0: tensor<200x100x300xf32>, %arg1: tensor<10x2xi32>) -
 
 // -----
 
-// CHECK-LABEL: @xla_gather_i32
-func.func @xla_gather_i32(%arg0: tensor<200x100x300xf32>, %arg1: tensor<10x2xi32>) -> tensor<1x300x10xf32> {
+// CHECK-LABEL: @local_xla_gather_i32
+func.func @local_xla_gather_i32(%arg0: tensor<200x100x300xf32>, %arg1: tensor<10x2xi32>) -> tensor<1x300x10xf32> {
   %cst = "tf.Const"() { value = dense<[1, 1, 300]> : tensor<3xi32> } : () -> tensor<3xi32>
 
   // CHECK: "mhlo.gather"
@@ -6716,7 +6716,7 @@ func.func @approximateequal_complex64(%arg0: tensor<?xcomplex<f32>>, %arg1: tens
 // -----
 
 // CHECK-LABEL: xla_conv_v2
-func.func @xla_conv_v2(%lhs: tensor<8x4x16x16x16xf32>, %rhs: tensor<4x3x3x16x16xf32>) -> (tensor<4x4x14x14x16xf32>) {
+func.func @local_xla_conv_v2(%lhs: tensor<8x4x16x16x16xf32>, %rhs: tensor<4x3x3x16x16xf32>) -> (tensor<4x4x14x14x16xf32>) {
   %feature_group_count = "tf.Const"() {value = dense<1> : tensor<i32>} : () -> tensor<i32>
   %lhs_dilation = "tf.Const"() {value = dense<[4, 1, 1]> : tensor<3xi32>} : () -> tensor<3xi32>
   %rhs_dilation = "tf.Const"() {value = dense<1> : tensor<3xi32>} : () -> tensor<3xi32>
@@ -6733,9 +6733,9 @@ func.func @xla_conv_v2(%lhs: tensor<8x4x16x16x16xf32>, %rhs: tensor<4x3x3x16x16x
 
 // -----
 
-// CHECK-LABEL: @xladot_matmul(
+// CHECK-LABEL: @local_xladot_matmul(
 // CHECK-SAME:    %[[LHS:.*]]: tensor<64x32xi8>, %[[RHS:.*]]: tensor<32x16xi8>) -> tensor<64x16xi32>
-func.func @xladot_matmul(%lhs : tensor<64x32xi8>, %rhs : tensor<32x16xi8>) -> tensor<64x16xi32> {
+func.func @local_xladot_matmul(%lhs : tensor<64x32xi8>, %rhs : tensor<32x16xi8>) -> tensor<64x16xi32> {
   // CHECK: "mhlo.dot_general"(%[[LHS]], %[[RHS]]) {
   // CHECK-SAME:  dot_dimension_numbers = #mhlo.dot<
   // CHECK-NOT:     lhs_batching_dimensions =
@@ -6753,9 +6753,9 @@ func.func @xladot_matmul(%lhs : tensor<64x32xi8>, %rhs : tensor<32x16xi8>) -> te
 
 // -----
 
-// CHECK-LABEL: @xladotv2_matmul(
+// CHECK-LABEL: @local_xladotv2_matmul(
 // CHECK-SAME:    %[[LHS:.*]]: tensor<64x32xi8>, %[[RHS:.*]]: tensor<32x16xi8>) -> tensor<64x16xi32>
-func.func @xladotv2_matmul(%lhs : tensor<64x32xi8>, %rhs : tensor<32x16xi8>) -> tensor<64x16xi32> {
+func.func @local_xladotv2_matmul(%lhs : tensor<64x32xi8>, %rhs : tensor<32x16xi8>) -> tensor<64x16xi32> {
   // CHECK: "mhlo.dot_general"(%[[LHS]], %[[RHS]]) {
   // CHECK-SAME:  dot_dimension_numbers = #mhlo.dot<
   // CHECK-NOT:     lhs_batching_dimensions =
@@ -6773,7 +6773,7 @@ func.func @xladotv2_matmul(%lhs : tensor<64x32xi8>, %rhs : tensor<32x16xi8>) -> 
 // -----
 
 // CHECK-LABEL: xla_dynamic_slice_constant_start
-func.func @xla_dynamic_slice_constant_start(%arg0: tensor<4xi32>) -> tensor<2xi32> {
+func.func @local_xla_dynamic_slice_constant_start(%arg0: tensor<4xi32>) -> tensor<2xi32> {
   // CHECK: %[[START:.*]] = mhlo.constant dense<1> : tensor<i64>
   // CHECK-DAG-SAME: {limit_indices = dense<1> : tensor<1xi64>,
   // CHECK-DAG-SAME: start_indices = dense<0> : tensor<1xi64>,
@@ -6793,7 +6793,7 @@ func.func @xla_dynamic_slice_constant_start(%arg0: tensor<4xi32>) -> tensor<2xi3
 // -----
 
 // CHECK-LABEL: xla_dynamic_slice_i32_consts
-func.func @xla_dynamic_slice_i32_consts(%arg0: tensor<4xi32>) -> tensor<2xi32> {
+func.func @local_xla_dynamic_slice_i32_consts(%arg0: tensor<4xi32>) -> tensor<2xi32> {
   // CHECK: %[[START:.*]] = mhlo.constant dense<1> : tensor<i32>
   // CHECK: "mhlo.dynamic_slice"(%arg0, %[[START]]) {slice_sizes = dense<2> : tensor<1xi64>} : (tensor<4xi32>, tensor<i32>) -> tensor<2xi32>
   %starts = "tf.Const"() {value = dense<[1]> : tensor<1xi32>} : () -> (tensor<1xi32>)
@@ -6805,7 +6805,7 @@ func.func @xla_dynamic_slice_i32_consts(%arg0: tensor<4xi32>) -> tensor<2xi32> {
 // -----
 
 // CHECK-LABEL: xla_dynamic_slice_constant_start_dynamic_shape
-func.func @xla_dynamic_slice_constant_start_dynamic_shape(%arg0: tensor<?x4xi32>, %arg1: tensor<2xi64>) -> tensor<1x4xi32> {
+func.func @local_xla_dynamic_slice_constant_start_dynamic_shape(%arg0: tensor<?x4xi32>, %arg1: tensor<2xi64>) -> tensor<1x4xi32> {
   // CHECK-DAG: %[[START1:.*]] = mhlo.constant dense<1> : tensor<i64>
   // CHECK-DAG: %[[START2:.*]] = mhlo.constant dense<0> : tensor<i64>
   // CHECK: %[[RESULT:.*]] = "mhlo.dynamic_slice"
@@ -6822,7 +6822,7 @@ func.func @xla_dynamic_slice_constant_start_dynamic_shape(%arg0: tensor<?x4xi32>
 // -----
 
 // CHECK-LABEL: xla_dynamic_slice_variable_start
-func.func @xla_dynamic_slice_variable_start(%arg0: tensor<3x4xi32>, %arg1: tensor<2xi64>) -> tensor<1x4xi32> {
+func.func @local_xla_dynamic_slice_variable_start(%arg0: tensor<3x4xi32>, %arg1: tensor<2xi64>) -> tensor<1x4xi32> {
   // CHECK: %[[SLICED_START1:.*]] = "mhlo.slice"(%arg1)
   // CHECK-DAG-SAME: {limit_indices = dense<1> : tensor<1xi64>,
   // CHECK-DAG-SAME: start_indices = dense<0> : tensor<1xi64>,
@@ -6843,7 +6843,7 @@ func.func @xla_dynamic_slice_variable_start(%arg0: tensor<3x4xi32>, %arg1: tenso
 // -----
 
 // CHECK-LABEL: xla_dynamic_slice_mhlo_sizes
-func.func @xla_dynamic_slice_mhlo_sizes(%arg0: tensor<1x1024x4xf32>, %arg1: tensor<3xi32>) -> tensor<1x512x4xf32> {
+func.func @local_xla_dynamic_slice_mhlo_sizes(%arg0: tensor<1x1024x4xf32>, %arg1: tensor<3xi32>) -> tensor<1x512x4xf32> {
   // CHECK-NOT: "tf.XlaDynamicSlice"
   %0 = "mhlo.constant"() {value = dense<[1, 512, 4]> : tensor<3xi32>} : () -> tensor<3xi32>
   %1 = "tf.XlaDynamicSlice"(%arg0, %arg1, %0) : (tensor<1x1024x4xf32>, tensor<3xi32>, tensor<3xi32>) -> tensor<1x512x4xf32>
@@ -6856,8 +6856,8 @@ func.func @xla_dynamic_slice_mhlo_sizes(%arg0: tensor<1x1024x4xf32>, %arg1: tens
 
 // -----
 
-// CHECK-LABEL: func @xlaeinsum
-func.func @xlaeinsum(%arg0: tensor<2x3xf32>, %arg1: tensor<3x4xf32>) -> tensor<2x4xf32> {
+// CHECK-LABEL: func @local_xlaeinsum
+func.func @local_xlaeinsum(%arg0: tensor<2x3xf32>, %arg1: tensor<3x4xf32>) -> tensor<2x4xf32> {
   // CHECK-NEXT:  mhlo.einsum
   %0 = "tf.XlaEinsum"(%arg0, %arg1) {equation = "ab,bc->ac"} : (tensor<2x3xf32>, tensor<3x4xf32>) -> tensor<2x4xf32>
   func.return %0: tensor<2x4xf32>
@@ -6896,9 +6896,9 @@ func.func private @sum_reducer3(%arg0: tensor<*xf32>, %arg1: tensor<*xf32>) -> t
 
 // -----
 
-// CHECK-LABEL: @xlasort_int
+// CHECK-LABEL: @local_xlasort_int
 // CHECK-SAME: %[[INPUT:.*]]: tensor<16xi32>
-func.func @xlasort_int(%input: tensor<16xi32>) -> (tensor<16xi32>) {
+func.func @local_xlasort_int(%input: tensor<16xi32>) -> (tensor<16xi32>) {
   // CHECK-NEXT: %[[SORT:.*]] = "mhlo.sort"(%[[INPUT]]) ({
   // CHECK-NEXT: ^{{.*}}(%[[LHS:.*]]: tensor<i32>, %[[RHS:.*]]: tensor<i32>)
   // CHECK-NEXT:   %[[CMP:.*]] = mhlo.compare LT, %[[LHS]], %[[RHS]], NOTYPE
@@ -6911,9 +6911,9 @@ func.func @xlasort_int(%input: tensor<16xi32>) -> (tensor<16xi32>) {
 
 // -----
 
-// CHECK-LABEL: @xlasort_float
+// CHECK-LABEL: @local_xlasort_float
 // CHECK-SAME: %[[INPUT:.*]]: tensor<8xf64>
-func.func @xlasort_float(%input: tensor<8xf64>) -> (tensor<8xf64>) {
+func.func @local_xlasort_float(%input: tensor<8xf64>) -> (tensor<8xf64>) {
   // CHECK-NEXT: %[[SORT:.*]] = "mhlo.sort"(%[[INPUT]]) ({
   // CHECK-NEXT: ^{{.*}}(%[[LHS:.*]]: tensor<f64>, %[[RHS:.*]]: tensor<f64>)
   // CHECK-NEXT:   %[[CMP:.*]] = mhlo.compare LT, %[[LHS]], %[[RHS]], TOTALORDER
@@ -6926,8 +6926,8 @@ func.func @xlasort_float(%input: tensor<8xf64>) -> (tensor<8xf64>) {
 
 // -----
 
-// CHECK-LABEL: @xlasort_const
-func.func @xlasort_const() -> (tensor<2x3xi64>) {
+// CHECK-LABEL: @local_xlasort_const
+func.func @local_xlasort_const() -> (tensor<2x3xi64>) {
   // CHECK: [2, 4, 3], [6, 5, 1]
   %input = "tf.Const"() {value = dense<[[2, 4, 3], [6, 5, 1]]> : tensor<2x3xi64>} : () -> (tensor<2x3xi64>)
   // CHECK-NEXT: [2, 3, 4], [1, 5, 6]
@@ -6939,9 +6939,9 @@ func.func @xlasort_const() -> (tensor<2x3xi64>) {
 // tf.XlaRngBitGenerator legalization
 //===----------------------------------------------------------------------===//
 
-// CHECK-LABEL: @xla_rng_bit_generator
+// CHECK-LABEL: @local_xla_rng_bit_generator
 // CHECK-SAME: %[[STATE:.*]]: tensor<2xui64>
-func.func @xla_rng_bit_generator(%arg0: tensor<2xui64>) -> (tensor<2xui64>, tensor<10x12xui32>) attributes {tf.entry_function = {control_outputs = "", inputs = "_arg0,_arg1,_arg2", outputs = "_retval0,_retval1"}} {
+func.func @local_xla_rng_bit_generator(%arg0: tensor<2xui64>) -> (tensor<2xui64>, tensor<10x12xui32>) attributes {tf.entry_function = {control_outputs = "", inputs = "_arg0,_arg1,_arg2", outputs = "_retval0,_retval1"}} {
   // CHECK-NEXT: %0 = mhlo.constant dense<[10, 12]> : tensor<2xi32>
   %cst = "tf.Const"() {value = dense<[10, 12]> : tensor<2xi32>} : () -> tensor<2xi32>
   // CHECK-NEXT: %1 = mhlo.constant dense<3> : tensor<i32>
@@ -6957,8 +6957,8 @@ func.func @xla_rng_bit_generator(%arg0: tensor<2xui64>) -> (tensor<2xui64>, tens
 //===----------------------------------------------------------------------===//
 
 // -----
-// CHECK-LABEL: @xla_variadic_reduce_v2
-func.func @xla_variadic_reduce_v2(%arg0: tensor<2x3xcomplex<f64>>, %arg1: tensor<complex<f64>>) -> tensor<3xcomplex<f64>> attributes {tf.entry_function = {control_outputs = "", inputs = "_arg0,_arg1", outputs = "_retval0"}} {
+// CHECK-LABEL: @local_xla_variadic_reduce_v2
+func.func @local_xla_variadic_reduce_v2(%arg0: tensor<2x3xcomplex<f64>>, %arg1: tensor<complex<f64>>) -> tensor<3xcomplex<f64>> attributes {tf.entry_function = {control_outputs = "", inputs = "_arg0,_arg1", outputs = "_retval0"}} {
   // CHECK: %[[REDUCE:.*]] = mhlo.reduce(%arg0 init: %arg1)
   // CHECK-SAME: dimensions = [0]
   // CHECK-NEXT: (%[[ARG0:.*]]: tensor<complex<f64>>, %[[ARG1:.*]]: tensor<complex<f64>>)
@@ -6976,8 +6976,8 @@ func.func private @sum_reducer(%arg0: tensor<complex<f64>>, %arg1: tensor<comple
 
 // -----
 
-// CHECK-LABEL: @xla_variadic_reduce_v2_dynamic
-func.func @xla_variadic_reduce_v2_dynamic(%arg0: tensor<*xi32>, %arg1: tensor<*xi32>) -> tensor<*xi32> attributes {tf.entry_function = {control_outputs = "", inputs = "_arg0,_arg1", outputs = "_retval0"}} {
+// CHECK-LABEL: @local_xla_variadic_reduce_v2_dynamic
+func.func @local_xla_variadic_reduce_v2_dynamic(%arg0: tensor<*xi32>, %arg1: tensor<*xi32>) -> tensor<*xi32> attributes {tf.entry_function = {control_outputs = "", inputs = "_arg0,_arg1", outputs = "_retval0"}} {
   // CHECK: %[[REDUCE:.*]] = mhlo.reduce(%arg0 init: %arg1)
   // CHECK-SAME: dimensions = [0]
   // CHECK-NEXT: (%[[ARG0:.*]]: tensor<i32>, %[[ARG1:.*]]: tensor<i32>)
@@ -6997,9 +6997,9 @@ func.func private @sum_reducer2(%arg0: tensor<i32>, %arg1: tensor<i32>) -> tenso
 // tf.XlaVariadicSort legalization
 //===----------------------------------------------------------------------===//
 
-// CHECK-LABEL: @xla_variadic_sort
+// CHECK-LABEL: @local_xla_variadic_sort
 // CHECK-SAME: %[[INPUT:.*]]: tensor<2x3x4xui8>
-func.func @xla_variadic_sort(%arg0: tensor<2x3x4xui8>) -> tensor<2x3x4xui8> attributes {tf.entry_function = {control_outputs = "", inputs = "_arg0,_arg1", outputs = "_retval0"}} {
+func.func @local_xla_variadic_sort(%arg0: tensor<2x3x4xui8>) -> tensor<2x3x4xui8> attributes {tf.entry_function = {control_outputs = "", inputs = "_arg0,_arg1", outputs = "_retval0"}} {
   // CHECK-NEXT: {{.*}} = mhlo.constant dense<0> : tensor<i32>
   %cst = "tf.Const"() {value = dense<0> : tensor<i32>} : () -> tensor<i32>
   // CHECK-NEXT: %[[SORT:.*]] = "mhlo.sort"(%[[INPUT]]) ({
@@ -7031,8 +7031,8 @@ func.func @nextafter(%arg0: tensor<2xf32>, %arg1 : tensor<2xf32>) -> tensor<2xf3
 //===----------------------------------------------------------------------===//
 // tf.XlaReduceScatter legalization
 //===----------------------------------------------------------------------===//
-// CHECK-LABEL: func @xla_reduce_scatter
-func.func @xla_reduce_scatter(%arg0: tensor<128x128xf32>) -> tensor<64x128xf32> {
+// CHECK-LABEL: func @local_xla_reduce_scatter
+func.func @local_xla_reduce_scatter(%arg0: tensor<128x128xf32>) -> tensor<64x128xf32> {
     %cst = "tf.Const"() {value = dense<0> : tensor<i32>} : () -> tensor<i32>
     %cst_0 = "tf.Const"() {value = dense<[[0, 4], [1, 5], [2, 6], [3, 7]]> : tensor<4x2xi32>} : () -> tensor<4x2xi32>
     // CHECK:          "mhlo.reduce_scatter"(%arg0)

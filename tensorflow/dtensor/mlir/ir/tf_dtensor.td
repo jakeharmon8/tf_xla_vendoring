@@ -39,11 +39,6 @@ def DTensor_LayoutAttr : DTensor_DTensorAttr<"Layout", "layout"> {
   let convertFromStorage = "$_self.cast<mlir::dtensor::LayoutAttr>().getValue()";
 }
 
-def DTensor_MeshAttr : DTensor_DTensorAttr<"Mesh", "mesh"> {
-  let returnType = "mlir::dtensor::MeshAttr::Mesh";
-  let convertFromStorage = "$_self.cast<mlir::dtensor::MeshAttr>().getValue()";
-}
-
 //===----------------------------------------------------------------------===//
 // DTensor op definitions
 //===----------------------------------------------------------------------===//
@@ -54,7 +49,7 @@ def Tf_DTensorSend : TF_Op<"DTensorSend", []> {
   let arguments = (ins
     TF_Tensor:$input,
     StrAttr:$key,
-    DTensor_MeshAttr:$target_mesh
+    DTensor_LayoutAttr:$target_layout
   );
 
   let results = (outs);
@@ -68,7 +63,7 @@ def Tf_DTensorRecv : TF_Op<"DTensorRecv", []> {
   let arguments = (ins
     StrAttr:$key,
     TF_ShapeAttr:$shape,
-    DTensor_MeshAttr:$mesh
+    DTensor_LayoutAttr:$layout
  );
  let results = (outs
     TF_Tensor:$output
@@ -132,7 +127,8 @@ def TF_CopyToMeshOp : TF_Op<"CopyToMesh", [Pure]> {
 
   let arguments = (ins
     TF_Tensor:$input,
-    StrAttr:$mesh
+
+    StrAttr:$layout
   );
 
   let results = (outs
@@ -147,7 +143,10 @@ def TF_CopyToMeshGradOp : TF_Op<"CopyToMeshGrad", [Pure]> {
 
   let arguments = (ins
     TF_Tensor:$input,
-    TF_Tensor:$forward_input
+
+    TF_Tensor:$forward_input,
+
+    StrAttr:$reference_layout
   );
 
   let results = (outs

@@ -35,8 +35,8 @@ limitations under the License.
 #include "tensorflow/core/framework/resource_handle.pb.h"
 #include "tensorflow/core/platform/errors.h"
 #include "tensorflow/core/platform/status.h"
-#include "tensorflow/tsl/platform/errors.h"
-#include "tensorflow/tsl/platform/status.h"
+#include "tsl/platform/errors.h"
+#include "tsl/platform/status.h"
 
 constexpr int kInvalidLineNumber = -1;
 

@@ -53,15 +53,15 @@ limitations under the License.
 #include "tensorflow/compiler/jit/flags.h"
 #include "tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.h"
 #include "tensorflow/compiler/mlir/tensorflow/utils/error_util.h"
-#include "tensorflow/compiler/xla/client/xla_computation.h"
-#include "tensorflow/compiler/xla/mlir_hlo/mhlo/IR/hlo_ops.h"
-#include "tensorflow/compiler/xla/mlir_hlo/mhlo/transforms/passes.h"
-#include "tensorflow/compiler/xla/python/refine_polymorphic_shapes.h"
-#include "tensorflow/compiler/xla/translate/hlo_to_mhlo/hlo_utils.h"
-#include "tensorflow/compiler/xla/translate/mhlo_to_hlo/mlir_hlo_to_hlo.h"
-#include "tensorflow/tsl/platform/errors.h"
-#include "tensorflow/tsl/platform/regexp.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "xla/client/xla_computation.h"
+#include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
+#include "xla/mlir_hlo/mhlo/transforms/passes.h"
+#include "xla/python/refine_polymorphic_shapes.h"
+#include "xla/translate/hlo_to_mhlo/hlo_utils.h"
+#include "xla/translate/mhlo_to_hlo/mlir_hlo_to_hlo.h"
+#include "tsl/platform/errors.h"
+#include "tsl/platform/regexp.h"
+#include "tsl/platform/statusor.h"
 
 namespace tensorflow {
 
@@ -85,13 +85,13 @@ constexpr int kVersionMinimumSupported = kVersionStartStableHloCompatibility;
 constexpr int kVersionMaximumSupported =
     kVersionStartSupportUsesShapePolymorphismAttr;
 
-constexpr llvm::StringRef kDisabledCheckPlatform = "platform";
+constexpr absl::string_view kDisabledCheckPlatform = "platform";
 
 bool IsPlatformCheckDisabled(absl::Span<const std::string> disabled_checks) {
   return llvm::is_contained(disabled_checks, kDisabledCheckPlatform);
 }
 
-constexpr llvm::StringRef kDisabledCheckShapeAssertions = "shape_assertions";
+constexpr absl::string_view kDisabledCheckShapeAssertions = "shape_assertions";
 
 bool IsShapeAssertionsCheckDisabled(
     absl::Span<const std::string> loading_disabled_checks) {
@@ -99,7 +99,7 @@ bool IsShapeAssertionsCheckDisabled(
                             kDisabledCheckShapeAssertions);
 }
 
-constexpr llvm::StringRef kUsesShapePolymorphismAttr =
+constexpr absl::string_view kUsesShapePolymorphismAttr =
     "jax.uses_shape_polymorphism";
 
 // Computes a dimension value from the dim_arg specification.
@@ -312,14 +312,13 @@ tsl::Status XlaCallModuleLoader::RefineDynamicShapes(
       }
       if (!uses_shape_poly_bool_attr.getValue()) {
         VLOG(3) << "XlaCallModule skipping shape refinement due to module "
-                << " attribute " << kUsesShapePolymorphismAttr.str() << "="
+                << " attribute " << kUsesShapePolymorphismAttr << "="
                 << mlir::debugString(uses_shape_poly_attr);
         return tsl::OkStatus();
       }
     } else {
       VLOG(3) << "XlaCallModule skipping shape refinement due to module "
-              << " attribute " << kUsesShapePolymorphismAttr.str()
-              << " missing";
+              << " attribute " << kUsesShapePolymorphismAttr << " missing";
       return tsl::OkStatus();
     }
   }

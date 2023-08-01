@@ -18,7 +18,7 @@ limitations under the License.
 
 #include <Python.h>
 
-#include "tensorflow/tsl/python/lib/core/ml_dtypes.h"
+#include "tsl/python/lib/core/ml_dtypes.h"
 
 namespace tensorflow {
 

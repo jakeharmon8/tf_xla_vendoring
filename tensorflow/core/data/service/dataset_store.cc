@@ -55,6 +55,8 @@ Status FileSystemDatasetStore::Get(
   return OkStatus();
 }
 
+MemoryDatasetStore::MemoryDatasetStore() {}
+
 Status MemoryDatasetStore::Put(const std::string& key,
                                const DatasetDef& dataset) {
   auto& stored_dataset = datasets_[key];

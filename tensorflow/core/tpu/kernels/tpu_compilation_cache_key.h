@@ -19,6 +19,7 @@ limitations under the License.
 #include <string>
 
 #include "absl/strings/str_cat.h"
+#include "absl/types/optional.h"
 
 namespace tensorflow {
 namespace tpu {

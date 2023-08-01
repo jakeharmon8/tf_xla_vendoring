@@ -347,7 +347,7 @@ cc_library(
         "//tensorflow/lite/kernels:cpu_backend_gemm",
         "//tensorflow/lite/kernels:cpu_backend_threadpool",
         "//tensorflow/lite/kernels:kernel_util",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
         "@gemmlowp//:fixedpoint",
         "@ruy//ruy/profiler:instrumentation",
     ],
@@ -385,7 +385,7 @@ cc_library(
         "//tensorflow/lite/kernels:cpu_backend_context",
         "//tensorflow/lite/kernels:cpu_backend_gemm",
         "//tensorflow/lite/kernels:cpu_backend_threadpool",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
         "@gemmlowp",
         "@ruy//ruy/profiler:instrumentation",
     ],
@@ -404,8 +404,8 @@ cc_library(
         ":optimized_base",
         ":types",
         "//tensorflow/lite/core/c:common",
-        "//tensorflow/tsl/framework/convolution:eigen_spatial_convolutions-inl",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
+        "@local_tsl//tsl/framework/convolution:eigen_spatial_convolutions-inl",
     ],
 )
 
@@ -429,14 +429,6 @@ cc_library(
             "optimized/4bit/neon_fully_connected_aarch64_sdot.cc",
             "optimized/4bit/neon_fully_connected_impl.h",
         ],
-        # copybara:uncomment_begin(google-only)
-        # "//tools/cc_target_os:toyota-sa8155-aarch64-oe-linux": [
-        # "optimized/4bit/neon_fully_connected.cc",
-        # "optimized/4bit/neon_fully_connected_aarch64_nosdot.cc",
-        # "optimized/4bit/neon_fully_connected_aarch64_sdot.cc",
-        # "optimized/4bit/neon_fully_connected_impl.h",
-        # ],
-        # copybara:uncomment_end
         "//tensorflow:android_arm": [
             "optimized/4bit/neon_fully_connected.cc",
             "optimized/4bit/neon_fully_connected_arm32.cc",
@@ -459,11 +451,6 @@ cc_library(
         "//tensorflow:android_arm64": [
             "optimized/4bit/neon_fully_connected.h",
         ],
-        # copybara:uncomment_begin(google-only)
-        # "//tools/cc_target_os:toyota-sa8155-aarch64-oe-linux": [
-        # "optimized/4bit/neon_fully_connected.h",
-        # ],
-        # copybara:uncomment_end
         "//tensorflow:android_arm": [
             "optimized/4bit/neon_fully_connected.h",
         ],
@@ -474,11 +461,6 @@ cc_library(
         "//tensorflow:android_arm64": [
             "-march=armv8.2-a+dotprod",
         ],
-        # copybara:uncomment_begin(google-only)
-        # "//tools/cc_target_os:toyota-sa8155-aarch64-oe-linux": [
-        # "-march=armv8.2-a+dotprod",
-        # ],
-        # copybara:uncomment_end
         "//tensorflow:android_arm": [],
         "//conditions:default": [],
     }) + NEON_FLAGS_IF_APPLICABLE,
@@ -487,11 +469,6 @@ cc_library(
         "//tensorflow:android_arm64": [
             "FC_4BIT_NEON",
         ],
-        # copybara:uncomment_begin(google-only)
-        # "//tools/cc_target_os:toyota-sa8155-aarch64-oe-linux": [
-        # "FC_4BIT_NEON",
-        # ],
-        # copybara:uncomment_end
         "//tensorflow:android_arm": [
             "FC_4BIT_NEON",
         ],
@@ -764,7 +741,7 @@ cc_library(
         "//tensorflow/lite/kernels:kernel_util",
         "//tensorflow/lite/kernels:op_macros",
         "//tensorflow/lite/kernels/internal/utils:sparsity_format_converter",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
         "@gemmlowp//:fixedpoint",
         "@ruy//ruy/profiler:instrumentation",
     ],
@@ -859,7 +836,7 @@ cc_library(
         "//tensorflow/lite/core/c:common",
         "//tensorflow/lite/kernels:op_macros",
         "//tensorflow/lite/kernels/internal/utils:sparsity_format_converter",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
         "@gemmlowp",
         "@ruy//ruy/profiler:instrumentation",
     ],
@@ -1110,7 +1087,7 @@ cc_library(
         ":cpu_check",
         ":tensor_utils_no_eigen",
         "//tensorflow/lite/core/c:common",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
     ] + selects.with_or({
         (
             ":arm_any",
@@ -1521,7 +1498,7 @@ transitive_hdrs(
     name = "nnapi_external_headers",
     visibility = ["//tensorflow/lite:__subpackages__"],
     deps = [
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
         "@gemmlowp",
     ],
 )

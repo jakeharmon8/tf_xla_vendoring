@@ -28,6 +28,7 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import init_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn
+from tensorflow.python.util.tf_export import keras_export
 
 
 class BaseDenseAttention(Layer):
@@ -216,6 +217,7 @@ class BaseDenseAttention(Layer):
     return dict(list(base_config.items()) + list(config.items()))
 
 
+@keras_export('keras.layers.Attention')
 class Attention(BaseDenseAttention):
   """Dot-product attention layer, a.k.a. Luong-style attention.
 
@@ -353,6 +355,7 @@ class Attention(BaseDenseAttention):
     return dict(list(base_config.items()) + list(config.items()))
 
 
+@keras_export('keras.layers.AdditiveAttention')
 class AdditiveAttention(BaseDenseAttention):
   """Additive attention layer, a.k.a. Bahdanau-style attention.
 

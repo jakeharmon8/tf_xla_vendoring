@@ -126,7 +126,7 @@ cc_library(
 )
 
 IMAGE_DEPS = [
-    "//third_party/eigen3",
+    "@eigen_archive//:eigen3",
     "//tensorflow/core:framework",
     "//tensorflow/core:gif_internal",
     "//tensorflow/core:jpeg_internal",
@@ -245,7 +245,7 @@ tf_kernel_library(
         "//tensorflow/core:lib",
         "//tensorflow/core/kernels:eigen_helpers",
         "//tensorflow/core/kernels:ops_util",
-        "//third_party/eigen3",
+        "@eigen_archive//:eigen3",
     ],
 )
 

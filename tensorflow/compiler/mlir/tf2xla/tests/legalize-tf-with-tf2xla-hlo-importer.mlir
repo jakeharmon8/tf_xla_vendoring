@@ -406,8 +406,8 @@ module attributes {tf.versions = {bad_consumers = [], min_consumer = 0 : i32, pr
   // Serialized string:
   //   "\08\04"
 
-  // CHECK-LABEL: @xla_spmd_full_to_shard_shape
-  func.func @xla_spmd_full_to_shard_shape(%arg0: tensor<2x2xi64>) -> (tensor<1x2xi64>) {
+  // CHECK-LABEL: @local_xla_spmd_full_to_shard_shape
+  func.func @local_xla_spmd_full_to_shard_shape(%arg0: tensor<2x2xi64>) -> (tensor<1x2xi64>) {
     // CHECK: %[[SHARDING:.*]] = mhlo.custom_call @Sharding(%arg0) {backend_config = "", mhlo.sharding = "{devices=[2,1]0,1}"} : (tensor<2x2xi64>) -> tensor<2x2xi64>
     // CHECK: %[[MANUAL:.*]] = mhlo.custom_call @SPMDFullToShardShape(%[[SHARDING]]) {backend_config = "", mhlo.sharding = "{manual}"} : (tensor<2x2xi64>) -> tensor<1x2xi64>
     // CHECK: return %[[MANUAL]]
@@ -430,8 +430,8 @@ module attributes {tf.versions = {bad_consumers = [], min_consumer = 0 : i32, pr
   // Serialized string:
   //   "\08\03\1A\02\02\01\22\02\00\01"
 
-  // CHECK-LABEL: @xla_spmd_shard_to_full_shape
-  func.func @xla_spmd_shard_to_full_shape(%arg0: tensor<1x2xi64>) -> (tensor<2x2xi64>) {
+  // CHECK-LABEL: @local_xla_spmd_shard_to_full_shape
+  func.func @local_xla_spmd_shard_to_full_shape(%arg0: tensor<1x2xi64>) -> (tensor<2x2xi64>) {
     // CHECK: %[[SHARDING:.*]] = mhlo.custom_call @Sharding(%arg0) {backend_config = "", mhlo.sharding = "{manual}"} : (tensor<1x2xi64>) -> tensor<1x2xi64>
     // CHECK: %[[FULL:.*]] = mhlo.custom_call @SPMDShardToFullShape(%[[SHARDING]]) {backend_config = "", mhlo.sharding = "{devices=[2,1]0,1}"} : (tensor<1x2xi64>) -> tensor<2x2xi64>
     // CHECK: return %[[FULL]]
@@ -439,8 +439,8 @@ module attributes {tf.versions = {bad_consumers = [], min_consumer = 0 : i32, pr
     func.return %0 : tensor<2x2xi64>
   }
 
-  // CHECK-LABEL: @xla_svd
-  func.func @xla_svd(%arg0: tensor<1x1xf32>) -> (tensor<1xf32>, tensor<1x1xf32>, tensor<1x1xf32>) {
+  // CHECK-LABEL: @local_xla_svd
+  func.func @local_xla_svd(%arg0: tensor<1x1xf32>) -> (tensor<1xf32>, tensor<1x1xf32>, tensor<1x1xf32>) {
     // CHECK-NOT: XlaSvd
     %s, %u, %v = "tf.XlaSvd"(%arg0) {max_iter = 1, epsilon = 1.0E-09 : f32, precision_config = ""} : (tensor<1x1xf32>) -> (tensor<1xf32>, tensor<1x1xf32>, tensor<1x1xf32>)
     func.return %s, %u, %v : tensor<1xf32>, tensor<1x1xf32>, tensor<1x1xf32>
@@ -656,8 +656,8 @@ module attributes {tf.versions = {bad_consumers = [], min_consumer = 0 : i32, pr
   //===--------------------------------------------------------------------===//
   // tf.XlaReduceScatter legalization
   //===--------------------------------------------------------------------===//
-  // CHECK-LABEL: func @xla_reduce_scatter
-  func.func @xla_reduce_scatter(%arg0: tensor<128x128xf32>) -> tensor<64x128xf32> {
+  // CHECK-LABEL: func @local_xla_reduce_scatter
+  func.func @local_xla_reduce_scatter(%arg0: tensor<128x128xf32>) -> tensor<64x128xf32> {
       %cst = "tf.Const"() {value = dense<0> : tensor<i32>} : () -> tensor<i32>
       %cst_0 = "tf.Const"() {value = dense<[[0, 4], [1, 5], [2, 6], [3, 7]]> : tensor<4x2xi32>} : () -> tensor<4x2xi32>
       // CHECK:          "mhlo.reduce_scatter"(%arg0)
@@ -702,8 +702,8 @@ module attributes {tf.versions = {bad_consumers = [], min_consumer = 0 : i32, pr
     func.return %2: tensor<7x22x128xi32>
   }
 
-  // CHECK-LABEL: func @xla_call_module
-  func.func @xla_call_module(%arg0: tensor<f32>) -> tensor<*xf32> {
+  // CHECK-LABEL: func @local_xla_call_module
+  func.func @local_xla_call_module(%arg0: tensor<f32>) -> tensor<*xf32> {
     // Equivalent to the following:
     //
     // module @jit_sin {

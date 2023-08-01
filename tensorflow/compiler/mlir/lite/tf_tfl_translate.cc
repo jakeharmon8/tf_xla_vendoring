@@ -42,7 +42,6 @@ limitations under the License.
 #include "mlir/Pass/PassManager.h"  // from @llvm-project
 #include "mlir/Support/FileUtilities.h"  // from @llvm-project
 #include "mlir/Transforms/Passes.h"  // from @llvm-project
-#include "stablehlo/dialect/StablehloOps.h"  // from @stablehlo
 #include "tensorflow/cc/saved_model/loader.h"
 #include "tensorflow/compiler/mlir/init_mlir.h"
 #include "tensorflow/compiler/mlir/lite/common/tfl_pass_config.h"
@@ -56,12 +55,12 @@ limitations under the License.
 #include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/mlir_roundtrip_flags.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/tf_mlir_translate_cl.h"
-#include "tensorflow/compiler/xla/translate/hlo_to_mhlo/translate.h"
+#include "xla/translate/hlo_to_mhlo/translate.h"
 #include "tensorflow/core/framework/types.pb.h"
 #include "tensorflow/core/platform/errors.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/schema/schema_generated.h"
-#include "tensorflow/tsl/platform/statusor.h"
+#include "tsl/platform/statusor.h"
 
 using mlir::MLIRContext;
 using mlir::ModuleOp;
@@ -165,8 +164,7 @@ int main(int argc, char **argv) {
     // back to do it properly in the future
     mlir::DialectRegistry registry;
     RegisterAllTensorFlowDialects(registry);
-    registry
-        .insert<mlir::func::FuncDialect, mlir::stablehlo::StablehloDialect>();
+    registry.insert<mlir::func::FuncDialect>();
     context.appendDialectRegistry(registry);
   }
 

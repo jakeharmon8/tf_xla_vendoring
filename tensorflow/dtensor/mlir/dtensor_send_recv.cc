@@ -21,7 +21,6 @@ limitations under the License.
 #include "llvm/Support/FormatVariadic.h"
 #include "mlir/IR/Attributes.h"  // from @llvm-project
 #include "mlir/IR/BuiltinAttributes.h"  // from @llvm-project
-#include "mlir/Support/DebugStringHelper.h"  // from @llvm-project
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_device.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_ops.h"
 #include "tensorflow/compiler/mlir/tensorflow/transforms/collection_ops_util.h"
@@ -117,10 +116,11 @@ StatusOr<mlir::Operation*> LowerDTensorSendToTFOp(
   builder.setInsertionPointAfter(send_input.getDefiningOp());
   std::string tensor_name = dtensor_send.getKey().str();
 
-  Mesh target_mesh = dtensor_send.getTargetMesh();
+  Layout target_layout = dtensor_send.getTargetLayout();
   absl::Span<const std::string> sending_devices =
       send_input_layout.mesh().local_devices();
-  absl::Span<const std::string> receiving_devices = target_mesh.local_devices();
+  absl::Span<const std::string> receiving_devices =
+      target_layout.mesh().local_devices();
 
   mlir::Operation* lowered_send_op;
   lowered_send_op = builder.create<mlir::TF::_HostSendOp>(
@@ -186,7 +186,7 @@ StatusOr<mlir::Operation*> LowerDTensorSendToXlaOp(
 // specific local tensor type needed, if different from the Recv op output type.
 StatusOr<mlir::Operation*> LowerDTensorRecvToXlaOp(
     mlir::TF::DTensorRecv dtensor_recv, mlir::Type output_type) {
-  const bool recv_at_cpu = dtensor_recv.getMesh().is_cpu_mesh();
+  const bool recv_at_cpu = dtensor_recv.getLayout().mesh().is_cpu_mesh();
   mlir::Operation* recv_xla_op = nullptr;
   mlir::OpBuilder builder(dtensor_recv);
 
@@ -256,8 +256,9 @@ StatusOr<mlir::Operation*> LowerDTensorSendFromCPUToTFOp(
   absl::Span<const std::string> sending_devices =
       send_input_layout.mesh().local_devices();
 
-  Mesh target_mesh = dtensor_send.getTargetMesh();
-  absl::Span<const std::string> receiving_devices = target_mesh.local_devices();
+  Layout target_layout = dtensor_send.getTargetLayout();
+  absl::Span<const std::string> receiving_devices =
+      target_layout.mesh().local_devices();
 
   std::string tensor_name = dtensor_send.getKey().str();
 
@@ -275,7 +276,7 @@ StatusOr<mlir::Operation*> LowerDTensorSendFromCPUToTFOp(
 // Lowers DTensorRecv op to TF Recv Op.
 StatusOr<mlir::Operation*> LowerDTensorRecvFromCPUToTFOp(
     const Mesh& send_mesh, mlir::TF::DTensorRecv dtensor_recv) {
-  const Mesh& recv_mesh = dtensor_recv.getMesh();
+  const Layout& recv_layout = dtensor_recv.getLayout();
 
   auto recv_cluster =
       dtensor_recv->getParentOfType<mlir::tf_device::ClusterOp>();
@@ -285,7 +286,8 @@ StatusOr<mlir::Operation*> LowerDTensorRecvFromCPUToTFOp(
   builder.setInsertionPoint(dtensor_recv);
   std::string tensor_name = dtensor_recv.getKey().str();
   absl::Span<const std::string> sending_devices = send_mesh.local_devices();
-  absl::Span<const std::string> receiving_devices = recv_mesh.local_devices();
+  absl::Span<const std::string> receiving_devices =
+      recv_layout.mesh().local_devices();
 
   mlir::Operation* lowered_recv_op;
   mlir::Location loc = dtensor_recv.getLoc();
@@ -304,7 +306,7 @@ StatusOr<mlir::Operation*> LowerDTensorRecvFromCPUToTFOp(
 StatusOr<mlir::Operation*> LowerDTensorRecvToTFOp(
     const Mesh& send_mesh, mlir::TF::DTensorRecv dtensor_recv,
     mlir::Type output_type) {
-  const Mesh& recv_mesh = dtensor_recv.getMesh();
+  const Layout& recv_layout = dtensor_recv.getLayout();
   auto recv_cluster =
       dtensor_recv->getParentOfType<mlir::tf_device::ClusterOp>();
 
@@ -312,7 +314,8 @@ StatusOr<mlir::Operation*> LowerDTensorRecvToTFOp(
   builder.setInsertionPoint(dtensor_recv);
   std::string tensor_name = dtensor_recv.getKey().str();
   absl::Span<const std::string> sending_devices = send_mesh.local_devices();
-  absl::Span<const std::string> receiving_devices = recv_mesh.local_devices();
+  absl::Span<const std::string> receiving_devices =
+      recv_layout.mesh().local_devices();
 
   mlir::Location loc = dtensor_recv.getLoc();
   mlir::Operation* lowered_recv_op = builder.create<mlir::TF::_HostRecvOp>(
@@ -444,8 +447,9 @@ StatusOr<mlir::Operation*> LowerOneToOneDTensorRecvToTFHostRecv(
 
   mlir::TensorType recv_type = dtensor_recv.getType();
   bool i32_copy = recv_type.getElementType().isInteger(32);
-  TF_ASSIGN_OR_RETURN(mlir::TensorType local_recv_type,
-                      LocalTypeFromGlobalType(recv_layout, recv_type));
+  TF_ASSIGN_OR_RETURN(
+      mlir::TensorType local_recv_type,
+      LocalTypeFromGlobalType(dtensor_recv.getLayout(), recv_type));
   mlir::TensorType local_output_type =
       i32_copy ? mlir::RankedTensorType::get(local_recv_type.getShape(),
                                              builder.getIntegerType(64))
@@ -531,7 +535,6 @@ bool SendRecvOpUsesXla(const Mesh& send_mesh, const Mesh& recv_mesh) {
 }
 }  // namespace
 
-// FIXME(b/271292250): Remove the recv_op argument.
 StatusOr<mlir::Operation*> LowerDTensorSend(mlir::Operation* send_op,
                                             mlir::Operation* recv_op) {
   auto dtensor_send = llvm::cast<mlir::TF::DTensorSend>(send_op);
@@ -541,17 +544,8 @@ StatusOr<mlir::Operation*> LowerDTensorSend(mlir::Operation* send_op,
       ExtractRequiredLayoutFromOperand(dtensor_send.getInput()));
 
   const Mesh& input_mesh = input_layout.mesh();
-  const Mesh& target_mesh = dtensor_send.getTargetMesh();
-
-  auto layout_attr =
-      dtensor_send->getAttrOfType<mlir::dtensor::LayoutAttr>(kTargetLayoutAttr);
-
-  if (!layout_attr) {
-    return absl::InvalidArgumentError("target_layout is not found");
-  }
-
-  const Layout& recv_layout = layout_attr.getValue();
-
+  const Layout& recv_layout = dtensor_send.getTargetLayout();
+  const Mesh& target_mesh = recv_layout.mesh();
   bool one_to_one = IsOneToOneMeshTransfer(input_layout, recv_layout);
   // Force string type to not use the allreduce/broadcast optimization as there
   // is no string type allreduce.
@@ -630,7 +624,8 @@ StatusOr<mlir::Operation*> LowerDTensorSend(mlir::Operation* send_op,
     dtensor_send->moveBefore(yield);
 
     // Lower DTensorSend op to actual TF op.
-    const Mesh& recv_mesh = recv_layout.mesh();
+    TF_ASSIGN_OR_RETURN(const Mesh recv_mesh,
+                        ExtractDeviceMeshEnclosingCluster(recv_op));
     if (SendRecvOpUsesXla(input_layout.mesh(), recv_mesh)) {
       // Lower DTensorSend op to Xla Send ops.
       TF_ASSIGN_OR_RETURN(
@@ -664,26 +659,23 @@ StatusOr<mlir::Operation*> LowerDTensorSend(mlir::Operation* send_op,
   return lowered_send;
 }
 
-// FIXME(b/271292250): Remove the send_op argument.
 StatusOr<mlir::Operation*> LowerDTensorRecv(mlir::Operation* send_op,
                                             mlir::Operation* recv_op) {
   auto dtensor_recv = llvm::cast<mlir::TF::DTensorRecv>(recv_op);
+  auto dtensor_send = llvm::dyn_cast<mlir::TF::DTensorSend>(send_op);
+
+  TF_ASSIGN_OR_RETURN(const Layout send_layout,
+                      ExtractRequiredLayoutFromOperand(send_op->getOperand(0)));
+
+  TF_ASSIGN_OR_RETURN(const Mesh send_mesh,
+                      ExtractDeviceMeshEnclosingCluster(send_op));
 
   TF_ASSIGN_OR_RETURN(const Layout output_layout,
                       ExtractRequiredSingleLayoutFromOp(recv_op));
 
   mlir::Operation* lowered_recv;
-  auto layout_attr =
-      dtensor_recv->getAttrOfType<mlir::dtensor::LayoutAttr>(kSourceLayoutAttr);
-  if (!layout_attr) {
-    return absl::InvalidArgumentError("source_layout is not found");
-  }
-  const Layout send_layout = layout_attr.getValue();
-
-  const Mesh send_mesh = send_layout.mesh();
-
-  const Mesh& recv_mesh = dtensor_recv.getMesh();
-  const Layout& recv_layout = output_layout;
+  const Layout recv_layout = dtensor_recv.getLayout();
+  const Mesh& recv_mesh = recv_layout.mesh();
   mlir::OpBuilder builder(dtensor_recv);
 
   bool cpu_to_cpu = recv_mesh.is_cpu_mesh() && send_mesh.is_cpu_mesh();
@@ -694,14 +686,15 @@ StatusOr<mlir::Operation*> LowerDTensorRecv(mlir::Operation* send_op,
   bool is_string_type = IsStringType(dtensor_recv.getType().getElementType());
 
   if (IsGpuToHostMeshTransfer(send_mesh, recv_mesh) &&
-      (one_to_one && (!recv_layout.IsFullyReplicated() || is_string_type))) {
+      (one_to_one &&
+       (!dtensor_recv.getLayout().IsFullyReplicated() || is_string_type))) {
     TF_ASSIGN_OR_RETURN(lowered_recv,
                         LowerOneToOneDTensorRecvToTFHostRecv(
                             send_mesh, recv_layout, dtensor_recv));
 
     // erase the send op here iff not targeting a gpu
     if (recv_mesh.device_type() != "GPU") {
-      send_op->erase();
+      dtensor_send.erase();
     }
 
     return lowered_recv;
@@ -713,10 +706,10 @@ StatusOr<mlir::Operation*> LowerDTensorRecv(mlir::Operation* send_op,
              (send_recv_xla && recv_mesh.is_cpu_mesh())) {
     // Recv can be lowered directly for a 1-to-1 transfer between host and
     // device (*for XLA/TPUs).
-    TF_ASSIGN_OR_RETURN(
-        mlir::TensorType local_output_type,
-        LocalTypeFromGlobalType(
-            recv_layout, dtensor_recv.getType().cast<mlir::TensorType>()));
+    TF_ASSIGN_OR_RETURN(mlir::TensorType local_output_type,
+                        LocalTypeFromGlobalType(
+                            dtensor_recv.getLayout(),
+                            dtensor_recv.getType().cast<mlir::TensorType>()));
     TF_ASSIGN_OR_RETURN(
         lowered_recv, LowerDTensorRecvToXlaOp(dtensor_recv, local_output_type));
     dtensor_recv->replaceAllUsesWith(lowered_recv);
@@ -729,7 +722,7 @@ StatusOr<mlir::Operation*> LowerDTensorRecv(mlir::Operation* send_op,
             : LowerDTensorRecvToTFOp;
 
     // For other send/recv layouts, the tensor needs to be replicated.
-    if (!recv_layout.IsFullyReplicated()) {
+    if (!dtensor_recv.getLayout().IsFullyReplicated()) {
       return absl::InvalidArgumentError(
           "CopyToMesh where target mesh is GPU/TPU requires a replicated "
           "target layout.");
@@ -851,7 +844,7 @@ StatusOr<mlir::Operation*> LowerDTensorSendAndRecv(mlir::Operation* send_op,
   auto dtensor_send = llvm::cast<mlir::TF::DTensorSend>(send_op);
   auto dtensor_recv = llvm::dyn_cast<mlir::TF::DTensorRecv>(recv_op);
 
-  const Mesh recv_mesh = dtensor_recv.getMesh();
+  const Mesh recv_mesh = dtensor_recv.getLayout().mesh();
   TF_ASSIGN_OR_RETURN(
       std::optional<Mesh> send_mesh,
       ExtractDeviceMeshFromOp(

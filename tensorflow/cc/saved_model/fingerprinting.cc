@@ -38,7 +38,7 @@ limitations under the License.
 #include "tensorflow/core/protobuf/saved_object_graph.pb.h"
 #include "tensorflow/core/util/tensor_bundle/naming.h"
 // Placeholder for protosplitter util include.
-#include "tensorflow/tsl/platform/errors.h"
+#include "tsl/platform/errors.h"
 
 namespace tensorflow::saved_model::fingerprinting {
 

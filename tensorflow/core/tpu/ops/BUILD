@@ -144,14 +144,14 @@ cc_library(
         "tpu_embedding_shape_util.h",
     ],
     deps = [
-        "//tensorflow/compiler/xla:status_macros",
-        "//tensorflow/compiler/xla:statusor",
-        "//tensorflow/compiler/xla:util",
         "//tensorflow/core:framework",
         "//tensorflow/core:lib",
         "//tensorflow/core:protos_all_cc",
         "//tensorflow/core/protobuf/tpu:tpu_embedding_configuration_proto_cc",
         "@com_google_absl//absl/strings",
+        "@local_xla//xla:status_macros",
+        "@local_xla//xla:statusor",
+        "@local_xla//xla:util",
     ],
 )
 
@@ -166,8 +166,6 @@ cc_library(
     linkstatic = 1,
     deps = [
         ":tpu_embedding_shape_util",
-        "//tensorflow/compiler/xla:status_macros",
-        "//tensorflow/compiler/xla:xla_data_proto_cc",
         "//tensorflow/core:framework",
         "//tensorflow/core:protos_all_cc",
         "//tensorflow/core/protobuf/tpu:tpu_embedding_configuration_proto_cc",
@@ -175,6 +173,8 @@ cc_library(
         "//tensorflow/core/tpu:tpu_embedding_output_layout_utils",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@local_xla//xla:status_macros",
+        "@local_xla//xla:xla_data_proto_cc",
     ],
     alwayslink = 1,
 )

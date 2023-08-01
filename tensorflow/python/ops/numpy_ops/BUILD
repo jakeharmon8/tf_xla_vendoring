@@ -30,12 +30,10 @@ py_strict_library(
 py_strict_library(
     name = "np_utils",
     srcs = ["np_utils.py"],
-    tags = [
-        "ignore_for_dep=third_party.py.requests",
-    ],
     deps = [
         ":np_arrays",
         ":np_dtypes",
+        ":np_export",
         "//tensorflow/python/framework:dtypes",
         "//tensorflow/python/framework:flexible_dtypes",
         "//tensorflow/python/framework:indexed_slices",
@@ -46,7 +44,6 @@ py_strict_library(
         "//tensorflow/python/ops:math_ops",
         "//tensorflow/python/types:core",
         "//tensorflow/python/util:nest",
-        "//tensorflow/python/util:tf_export",
         "//third_party/py/numpy",
     ],
 )
@@ -57,6 +54,7 @@ py_strict_library(
     deps = [
         ":np_arrays",
         ":np_dtypes",
+        ":np_export",
         ":np_utils",
         "//tensorflow/python/framework:constant_op",
         "//tensorflow/python/framework:dtypes",
@@ -72,7 +70,6 @@ py_strict_library(
         "//tensorflow/python/ops:math_ops",
         "//tensorflow/python/ops:sort_ops",
         "//tensorflow/python/util:nest",
-        "//tensorflow/python/util:tf_export",
         "//third_party/py/numpy",
     ],
 )
@@ -82,9 +79,9 @@ py_strict_library(
     srcs = ["np_config.py"],
     deps = [
         ":np_dtypes",
+        ":np_export",
         ":np_math_ops",
         "//tensorflow/python/framework:ops",
-        "//tensorflow/python/util:tf_export",
     ],
 )
 
@@ -92,10 +89,16 @@ py_strict_library(
     name = "np_dtypes",
     srcs = ["np_dtypes.py"],
     deps = [
+        ":np_export",
         "//tensorflow/python/framework:dtypes",
-        "//tensorflow/python/util:tf_export",
         "//third_party/py/numpy",
     ],
+)
+
+py_strict_library(
+    name = "np_export",
+    srcs = ["np_export.py"],
+    deps = ["//tensorflow/python/util:tf_export"],
 )
 
 py_strict_library(
@@ -108,7 +111,6 @@ py_strict_library(
         "//tensorflow/python/framework:random_seed",
         "//tensorflow/python/ops:array_ops",
         "//tensorflow/python/ops:random_ops",
-        "//tensorflow/python/util:tf_export",
         "//third_party/py/numpy",
     ],
 )
@@ -120,6 +122,7 @@ py_strict_library(
         ":np_array_ops",
         ":np_arrays",
         ":np_dtypes",
+        ":np_export",
         ":np_utils",
         "//tensorflow/python/framework:constant_op",
         "//tensorflow/python/framework:dtypes",
@@ -137,7 +140,6 @@ py_strict_library(
         "//tensorflow/python/ops:sort_ops",
         "//tensorflow/python/ops:special_math_ops",
         "//tensorflow/python/ops:while_loop",
-        "//tensorflow/python/util:tf_export",
         "//third_party/py/numpy",
     ],
 )

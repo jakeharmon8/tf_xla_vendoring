@@ -21,17 +21,17 @@ limitations under the License.
 
 #include "absl/status/status.h"
 #include "tensorflow/c/experimental/next_pluggable_device/tensor_pjrt_buffer_util.h"
+#include "tensorflow/c/tf_status_helper.h"
 #include "tensorflow/compiler/jit/pjrt_tensor_buffer_util.h"
 #include "tensorflow/compiler/tf2xla/literal_util.h"
-#include "tensorflow/compiler/xla/pjrt/pjrt_client.h"
+#include "xla/pjrt/pjrt_client.h"
 #include "tensorflow/core/common_runtime/next_pluggable_device/next_pluggable_device_api.h"
 #include "tensorflow/core/framework/device.h"
 #include "tensorflow/core/framework/device_factory.h"
 #include "tensorflow/core/profiler/lib/traceme.h"
 #include "tensorflow/core/tfrt/common/async_value_tensor.h"
 #include "tensorflow/core/tfrt/common/create_pjrt_client_util.h"
-#include "tensorflow/tsl/c/tsl_status_internal.h"
-#include "tensorflow/tsl/framework/device_id_utils.h"
+#include "tsl/framework/device_id_utils.h"
 
 namespace tensorflow {
 namespace {
@@ -180,11 +180,12 @@ void PjRtDeviceContext::CopyTensorInSameDevice(const Tensor* input_tensor,
     done(c_api_client.status());
   }
 
-  TSL_Status c_status;
+  TF_StatusPtr c_status_ptr(TF_NewStatus());
   PJRT_Buffer* dst_buffer = TfnpdApi()->TFNPD_SameDevicePjRtBufferCopy(
-      *c_src_buffer, (*c_api_client)->pjrt_c_client(), &c_status);
-  if (!c_status.status.ok()) {
-    done(c_status.status);
+      *c_src_buffer, (*c_api_client)->pjrt_c_client(), c_status_ptr.get());
+  auto copy_c_buffer_status = StatusFromTF_Status(c_status_ptr.get());
+  if (!copy_c_buffer_status.ok()) {
+    done(copy_c_buffer_status);
   }
 
   auto set_c_buffer_status =
